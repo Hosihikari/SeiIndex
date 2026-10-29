@@ -27,6 +27,12 @@ Any project can open a pull request for its own `sei/<name>.json`. There is no `
 4. Run `sk index verify . --check-artifacts --strict` (sk 0.1.6 or newer).
 5. Open a pull request. CI validates the schema, the artifact bytes, the embedded `sei.json`, and the append-only rule.
 
+## Merging
+
+Pull requests that only touch `index.json` and `sei/<name>.json` have GitHub auto-merge enabled automatically. Once the `validate` check from **Validate index** passes, the pull request is squash-merged without further review. Contributors do not need write access and do not need to enable auto-merge themselves.
+
+Pull requests that touch anything else, including `.github/` and this README, are not auto-merged; a maintainer reviews and merges those. This keeps CI changes out of automatic merges, since a pull request that can edit the workflow could otherwise satisfy its own checks.
+
 A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no control characters, and no leading or trailing space or dot. The file name, the `name` field, and the entry in `index.json` must all match.
 
 ## Rules
