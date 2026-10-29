@@ -26,14 +26,14 @@ sei/<name>.json     一个 sei 的全部版本与构件
 1. 构建一个根目录含 `sei.json` 与载荷的 zip。允许嵌套目录；载荷路径相对安装根部署。
 2. 将 zip 托管在稳定、公开的 URL。最简单的是钉在标签上的 GitHub Release 资产；对象存储与静态站点也可以。
 3. 打开 **Submit a sei version** issue：https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml，填写 sei 名称与完整的版本条目 JSON（构件、可选的依赖与选择器）。
-4. 组织成员与协作者的提交会自动处理；其他作者需要维护者添加 `index-submission` 标签。
+4. 对本仓库有写权限的账号会自动处理；其他作者需要维护者添加 `index-submission` 标签。
 5. 索引机器人把条目追加到 `sei/<name>.json`、把名称加入 `index.json`、打开 pull request、触发 **Validate index**，并启用自动合并。校验通过后 PR 自动合并，合并时关闭 issue。
 
 pull request 不是提交渠道。组织外作者提交的、只改动索引数据的 PR 会被关闭并指向 issue 表单；维护者仍可以用 PR 做其他改动。索引机器人的 PR 只改数据，且不会由外部贡献者创建。
 
 ## 合并
 
-成员与机器人提交的纯数据 PR 会自动启用 GitHub 自动合并；**Validate index** 的 `validate` 检查通过后，直接 squash 合并，不再另行审查。
+有写权限的账号与机器人提交的纯数据 PR 会自动启用 GitHub 自动合并；**Validate index** 的 `validate` 检查通过后，直接 squash 合并，不再另行审查。
 
 改动其他文件（包括 `.github/` 与本 README）的 PR 不会自动合并，由维护者审查后合并。这样 CI 改动就不会进入自动合并——否则一个能改工作流的 PR 就能自己满足检查。
 

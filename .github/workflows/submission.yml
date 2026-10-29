@@ -26,6 +26,9 @@ jobs:
       - name: Check authorization
         id: gate
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          AUTHOR: ${{ github.event.issue.user.login }}
           ASSOC: ${{ github.event.issue.author_association }}
           LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
           EVENT: ${{ github.event.action }}
@@ -42,6 +45,12 @@ jobs:
           case ",$LABELS," in
             *,index-submission,*) allowed=true ;;
           esac
+          if [ "$allowed" != true ]; then
+            permission=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq .permission 2>/dev/null || true)
+            case "$permission" in
+              admin|maintain|write) allowed=true ;;
+            esac
+          fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
 
       - name: Check out the index

@@ -29,6 +29,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           ASSOC: ${{ github.event.pull_request.author_association }}
           AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
           paths=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
@@ -63,6 +64,12 @@ jobs:
           esac
           if [ "$AUTHOR_TYPE" = "Bot" ]; then
             trusted=true
+          fi
+          if [ "$trusted" != true ]; then
+            permission=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq .permission 2>/dev/null || true)
+            case "$permission" in
+              admin|maintain|write) trusted=true ;;
+            esac
           fi
           echo "trusted=$trusted" >> "$GITHUB_OUTPUT"
 
