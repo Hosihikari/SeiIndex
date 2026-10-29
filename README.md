@@ -1,5 +1,7 @@
 # SeiIndex
 
+[English](README.md) | [简体中文](README.zh_hans.md)
+
 The official static index for [Seiko](https://github.com/Hosihikari/Seiko). Seiko consumes it as an ordinary source:
 
 ```hocon
