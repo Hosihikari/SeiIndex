@@ -1,0 +1,44 @@
+name: Close stale submissions
+
+# Submission issues that never reach a passing validation are closed as not
+# planned after 30 days. Issues closed by a merged pull request are already
+# closed and are not touched.
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  close:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Close issues without a passing validation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d '30 days ago' +%s)
+          candidates=$(mktemp)
+          for label in validation-pending validation-failed; do
+            gh issue list --repo "$REPO" --state open --label "$label" --limit 200 \
+              --json number,createdAt --jq '.[] | "\(.number) \(.createdAt)"' >> "$candidates"
+          done
+          sort -u -o "$candidates" "$candidates"
+
+          while read -r number created; do
+            [ -z "$number" ] && continue
+            created_seconds=$(date -u -d "$created" +%s)
+            if [ "$created_seconds" -ge "$cutoff" ]; then
+              continue
+            fi
+            labels=$(gh issue view "$number" --repo "$REPO" --json labels --jq '.labels[].name' || true)
+            if printf '%s\n' "$labels" | grep -qx validation-passed; then
+              continue
+            fi
+            gh issue close "$number" --repo "$REPO" --reason "not planned" \
+              --comment "Closed after 30 days without passing index validation. Open a new submission if this is still needed."
+          done < "$candidates"

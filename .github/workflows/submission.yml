@@ -78,6 +78,10 @@ jobs:
           set -euo pipefail
           body="The submission could not be applied: $ERROR"$'\n\n'"Fix the issue body and it will be processed again."
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label validation-failed
+          for label in validation-pending validation-passed; do
+            gh issue edit "$ISSUE" --repo "$REPO" --remove-label "$label" 2>/dev/null || true
+          done
 
       - name: Commit the entry
         id: commit
@@ -126,6 +130,19 @@ jobs:
             exit 1
           fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Mark validation pending
+        if: steps.pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label validation-pending
+          for label in validation-failed validation-passed; do
+            gh issue edit "$ISSUE" --repo "$REPO" --remove-label "$label" 2>/dev/null || true
+          done
 
       - name: Dispatch validation
         if: steps.pr.outcome == 'success'

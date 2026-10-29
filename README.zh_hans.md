@@ -31,6 +31,8 @@ sei/<name>.json     一个 sei 的全部版本与构件
 
 pull request 不是提交渠道。组织外作者提交的、只改动索引数据的 PR 会被关闭并指向 issue 表单；维护者仍可以用 PR 做其他改动。索引机器人的 PR 只改数据，且不会由外部贡献者创建。
 
+提交 issue 在 PR 校验期间带 `validation-pending` 标签；校验不通过改为 `validation-failed`，通过则改为 `validation-passed`。PR 正文包含 `Closes #<issue>`，合并时关闭 issue。30 天内未通过校验的提交 issue 会以 not planned 关闭。
+
 ## 合并
 
 有写权限的账号与机器人提交的纯数据 PR 会自动启用 GitHub 自动合并；**Validate index** 的 `validate` 检查通过后，直接 squash 合并，不再另行审查。

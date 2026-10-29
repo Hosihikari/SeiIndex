@@ -31,6 +31,8 @@ Any project can submit its own `sei/<name>.json` through the submission issue fo
 
 Pull requests are not the submission channel. Pull requests from outside the organization that only touch index data are closed with a pointer to the issue form; maintainers can still use pull requests for other changes. The index bot's pull requests are data-only and are never authored by an external contributor.
 
+The submission issue is labeled `validation-pending` while the pull request is being validated, `validation-failed` if validation does not pass, and `validation-passed` once it does. The pull request body contains `Closes #<issue>`, so merging closes the issue. Submission issues that do not pass validation within 30 days are closed as not planned.
+
 ## Merging
 
 Data-only pull requests from accounts with write access and from bots have GitHub auto-merge enabled automatically. Once the `validate` check from **Validate index** passes, they are squash-merged without further review.

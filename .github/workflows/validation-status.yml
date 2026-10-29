@@ -1,0 +1,47 @@
+name: Update submission validation status
+
+# Validate index runs as a workflow_dispatch for each submission branch. Use
+# its conclusion to move the submission issue between the validation labels.
+on:
+  workflow_run:
+    workflows: ["Validate index"]
+    types: [completed]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-22.04
+    if: github.event.workflow_run.event == 'workflow_dispatch'
+    steps:
+      - name: Update labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            submission/issue-*) ;;
+            *) exit 0 ;;
+          esac
+          issue="${BRANCH#submission/issue-}"
+          case "$issue" in
+            ''|*[!0-9]*) exit 0 ;;
+          esac
+
+          labels=$(gh issue view "$issue" --repo "$REPO" --json labels --jq '.labels[].name' || true)
+          if [ "$CONCLUSION" = "success" ]; then
+            add=validation-passed
+          else
+            add=validation-failed
+          fi
+          gh issue edit "$issue" --repo "$REPO" --add-label "$add"
+          for label in validation-pending validation-failed validation-passed; do
+            [ "$label" = "$add" ] && continue
+            if printf '%s\n' "$labels" | grep -qx "$label"; then
+              gh issue edit "$issue" --repo "$REPO" --remove-label "$label"
+            fi
+          done
