@@ -21,6 +21,7 @@ concurrency:
 jobs:
   submit:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     if: github.event.issue.state == 'open'
     steps:
       - name: Check authorization
@@ -145,13 +146,33 @@ jobs:
           done
 
       - name: Dispatch validation
+        id: dispatch
         if: steps.pr.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ steps.commit.outputs.branch }}
           BASE: ${{ steps.commit.outputs.base }}
-        run: gh workflow run validate.yml --repo "$REPO" --ref "$BRANCH" -f base="$BASE"
+        run: |
+          set -euo pipefail
+          previous=$(gh run list --repo "$REPO" --workflow validate.yml --branch "$BRANCH" \
+            --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          gh workflow run validate.yml --repo "$REPO" --ref "$BRANCH" -f base="$BASE"
+          run_id=""
+          for attempt in $(seq 1 30); do
+            current=$(gh run list --repo "$REPO" --workflow validate.yml --branch "$BRANCH" \
+              --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            if [ -n "$current" ] && [ "$current" != "$previous" ]; then
+              run_id="$current"
+              break
+            fi
+            sleep 2
+          done
+          if [ -z "$run_id" ]; then
+            echo "the validation run did not appear" >&2
+            exit 1
+          fi
+          echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
         if: steps.pr.outcome == 'success'
@@ -180,3 +201,25 @@ jobs:
           set -euo pipefail
           body="Submission accepted as #$PR. Auto-merge is enabled; the pull request merges when the index validation passes, and this issue closes on merge."
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
+
+      - name: Wait for validation and update labels
+        if: steps.dispatch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          RUN: ${{ steps.dispatch.outputs.run }}
+        run: |
+          set -euo pipefail
+          label=validation-failed
+          if gh run watch "$RUN" --repo "$REPO" --exit-status >/dev/null 2>&1; then
+            label=validation-passed
+          fi
+          labels=$(gh issue view "$ISSUE" --repo "$REPO" --json labels --jq '.labels[].name' || true)
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label "$label"
+          for other in validation-pending validation-failed validation-passed; do
+            [ "$other" = "$label" ] && continue
+            if printf '%s\n' "$labels" | grep -qx "$other"; then
+              gh issue edit "$ISSUE" --repo "$REPO" --remove-label "$other"
+            fi
+          done
