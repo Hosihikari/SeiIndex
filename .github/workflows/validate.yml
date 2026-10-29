@@ -1,0 +1,45 @@
+name: Validate index
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The validator is released with Seiko. Bump this to adopt a newer one.
+  SK_VERSION: "0.1.6"
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check append-only changes
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: python3 .github/scripts/check-append-only.py "$BASE"
+
+      - name: Download sk
+        run: |
+          set -euo pipefail
+          base="https://github.com/Hosihikari/Seiko/releases/download/v${SK_VERSION}"
+          asset="sk-${SK_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$asset" "$base/$asset"
+          curl -fsSL -o "$RUNNER_TEMP/SHA256SUMS" "$base/SHA256SUMS"
+          (cd "$RUNNER_TEMP" && sha256sum -c SHA256SUMS --ignore-missing)
+          mkdir -p "$RUNNER_TEMP/sk"
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/sk"
+          chmod +x "$RUNNER_TEMP/sk/sk"
+          "$RUNNER_TEMP/sk/sk" --version
+
+      - name: Verify index
+        run: "$RUNNER_TEMP/sk/sk index verify . --check-artifacts --strict"
