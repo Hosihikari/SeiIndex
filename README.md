@@ -17,19 +17,21 @@ index.json          schemaVersion, generatedBy, and the sei name list used by `s
 sei/<name>.json     all versions of one sei and their artifacts
 ```
 
-Any project can open a pull request for its own `sei/<name>.json`. There is no `sk publish`; hosting the artifact is up to the producer, and this repository only points at stable URLs and checksums.
+Any project can submit its own `sei/<name>.json` through the submission issue form; the index bot turns it into a pull request. There is no `sk publish`; hosting the artifact is up to the producer, and this repository only points at stable URLs and checksums.
 
 ## Submitting a sei
 
 1. Build a zip whose root contains `sei.json` and the payload. Nested directories are allowed; the payload paths are deployed relative to the install root.
 2. Host the zip at a stable, public URL. A GitHub Release asset pinned to a tag is the simplest option; object storage and static sites work too.
-3. Add or append `sei/<name>.json` and add the name to the `sei` list in `index.json`.
-4. Run `sk index verify . --check-artifacts --strict` (sk 0.1.6 or newer).
-5. Open a pull request. CI validates the schema, the artifact bytes, the embedded `sei.json`, and the append-only rule.
+3. Open a **Submit a sei version** issue: https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml. Enter the sei name and the complete version entry as JSON (artifacts, optional dependencies and selectors).
+4. Members and collaborators are processed automatically. Other authors need a maintainer to add the `index-submission` label.
+5. The index bot appends the entry to `sei/<name>.json`, adds the name to `index.json`, opens a pull request, dispatches **Validate index**, and enables auto-merge. The pull request merges when validation passes, and the issue closes on merge.
+
+Pull requests are not the submission channel. Pull requests from outside the organization that only touch index data are closed with a pointer to the issue form; maintainers can still use pull requests for other changes. The index bot's pull requests are data-only and are never authored by an external contributor.
 
 ## Merging
 
-Pull requests that only touch `index.json` and `sei/<name>.json` have GitHub auto-merge enabled automatically. Once the `validate` check from **Validate index** passes, the pull request is squash-merged without further review. Contributors do not need write access and do not need to enable auto-merge themselves.
+Data-only pull requests from members and bots have GitHub auto-merge enabled automatically. Once the `validate` check from **Validate index** passes, they are squash-merged without further review.
 
 Pull requests that touch anything else, including `.github/` and this README, are not auto-merged; a maintainer reviews and merges those. This keeps CI changes out of automatic merges, since a pull request that can edit the workflow could otherwise satisfy its own checks.
 

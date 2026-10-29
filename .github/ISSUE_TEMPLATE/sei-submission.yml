@@ -1,0 +1,44 @@
+name: Submit a sei version
+description: Propose one new version for the official index.
+title: "[sei] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One version per issue. The artifact must be a zip whose root contains `sei.json`.
+        The version object below is inserted into `sei/<name>.json` as-is; every field must match the artifact.
+        Schema and rules: https://github.com/Hosihikari/SeiIndex#schema
+
+        Members are processed automatically. Other authors need the `index-submission` label from a maintainer.
+  - type: input
+    id: name
+    attributes:
+      label: Sei name
+      description: Must match the name in the artifact's root sei.json and the index file.
+      placeholder: hosihikari
+    validations:
+      required: true
+  - type: textarea
+    id: entry
+    attributes:
+      label: Version entry (JSON)
+      description: |
+        The version object from the index schema, including at least one artifact.
+        Example:
+        {
+          "version": "1.2.0",
+          "dependencies": [],
+          "artifacts": [
+            {
+              "layout": "root",
+              "source": {
+                "url": "https://github.com/owner/repo/releases/download/v1.2.0/artifact.zip",
+                "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                "size": 12345
+              }
+            }
+          ]
+        }
+      render: json
+    validations:
+      required: true

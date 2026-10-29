@@ -1,0 +1,156 @@
+name: Process sei submission
+
+# Turns an issue-form submission into an index entry. The bot never executes
+# issue content: it parses the body as data, appends the version, opens a PR,
+# dispatches the normal validation, and enables auto-merge. The PR merges only
+# after the required "validate" check passes.
+on:
+  issues:
+    types: [opened, edited, labeled, reopened]
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: submission-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-22.04
+    if: github.event.issue.state == 'open'
+    steps:
+      - name: Check authorization
+        id: gate
+        env:
+          ASSOC: ${{ github.event.issue.author_association }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          EVENT: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+        run: |
+          set -euo pipefail
+          allowed=false
+          case "$ASSOC" in
+            OWNER|MEMBER|COLLABORATOR) allowed=true ;;
+          esac
+          if [ "$EVENT" = "labeled" ] && [ "$EVENT_LABEL" = "index-submission" ]; then
+            allowed=true
+          fi
+          case ",$LABELS," in
+            *,index-submission,*) allowed=true ;;
+          esac
+          echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the index
+        if: steps.gate.outputs.allowed == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply submission
+        id: apply
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python3 .github/scripts/apply-submission.py
+
+      - name: Comment rejection
+        if: steps.gate.outputs.allowed == 'true' && steps.apply.outputs.ok != 'true' && steps.apply.outputs.looks == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          ERROR: ${{ steps.apply.outputs.error }}
+        run: |
+          set -euo pipefail
+          body="The submission could not be applied: $ERROR"$'\n\n'"Fix the issue body and it will be processed again."
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
+
+      - name: Commit the entry
+        id: commit
+        if: steps.gate.outputs.allowed == 'true' && steps.apply.outputs.ok == 'true'
+        env:
+          NAME: ${{ steps.apply.outputs.name }}
+          VERSION: ${{ steps.apply.outputs.version }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          base=$(git rev-parse HEAD)
+          branch="submission/issue-$ISSUE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add -A -- index.json sei
+          git commit -m "sei: add $NAME $VERSION (#$ISSUE)"
+          git push --force origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Open the pull request
+        id: pr
+        if: steps.commit.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          NAME: ${{ steps.apply.outputs.name }}
+          VERSION: ${{ steps.apply.outputs.version }}
+          BRANCH: ${{ steps.commit.outputs.branch }}
+        run: |
+          set -euo pipefail
+          number=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$number" ]; then
+            gh pr create --repo "$REPO" --base main --head "$BRANCH" \
+              --title "sei: $NAME $VERSION (#$ISSUE)" \
+              --body "Closes #$ISSUE
+
+          Generated from the submission issue by the index bot. The entry is validated by the Validate index workflow before auto-merge merges it." \
+              >/dev/null
+            number=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          fi
+          if [ -z "$number" ]; then
+            echo "could not create a pull request" >&2
+            exit 1
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch validation
+        if: steps.pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ steps.commit.outputs.branch }}
+          BASE: ${{ steps.commit.outputs.base }}
+        run: gh workflow run validate.yml --repo "$REPO" --ref "$BRANCH" -f base="$BASE"
+
+      - name: Enable auto-merge
+        if: steps.pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$PR" --repo "$REPO" --squash --auto; then
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      - name: Comment acceptance
+        if: steps.pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          body="Submission accepted as #$PR. Auto-merge is enabled; the pull request merges when the index validation passes, and this issue closes on merge."
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$body"

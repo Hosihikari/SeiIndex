@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      base:
+        description: Base commit for the append-only check (submission bot).
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -23,10 +28,26 @@ jobs:
           fetch-depth: 0
 
       - name: Check append-only changes
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         env:
-          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-        run: python3 .github/scripts/check-append-only.py "$BASE"
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          DISPATCH_BASE: ${{ inputs.base }}
+        run: |
+          set -euo pipefail
+          base="${PR_BASE:-}"
+          if [ -z "$base" ]; then
+            base="${DISPATCH_BASE:-}"
+          fi
+          if [ -z "$base" ]; then
+            base="${PUSH_BEFORE:-}"
+          fi
+          case "$base" in
+            ""|0000000000000000000000000000000000000000)
+              echo "no base commit; skipping the append-only check"
+              exit 0
+              ;;
+          esac
+          python3 .github/scripts/check-append-only.py "$base"
 
       - name: Download sk
         run: |
