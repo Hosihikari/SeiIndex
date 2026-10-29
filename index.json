@@ -1,5 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedBy": "SeiIndex maintainers",
-  "sei": []
+  "sei": [
+    "probe"
+  ]
 }
