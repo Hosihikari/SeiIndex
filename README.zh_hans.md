@@ -27,7 +27,7 @@ sei/<name>.json     一个 sei 的全部版本与构件
 2. 将 zip 托管在稳定、公开的 URL。最简单的是钉在标签上的 GitHub Release 资产；对象存储与静态站点也可以。
 3. 打开 **Submit a sei version** issue：https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml，填写 sei 名称与完整的版本条目 JSON（构件、可选的依赖与选择器）。
 4. 对本仓库有写权限的账号会自动处理；其他作者需要维护者添加 `index-submission` 标签。
-5. 索引机器人把条目追加到 `sei/<name>.json`、把名称加入 `index.json`、打开 pull request、触发 **Validate index**，并启用自动合并。校验通过后 PR 自动合并，合并时关闭 issue。
+5. 索引机器人把条目追加到 `sei/<name>.json`、把名称加入 `index.json`、打开 pull request、批准 GitHub 为该 PR 暂扣的 **Validate index** 运行，并启用自动合并。校验通过后 PR 自动合并，合并时关闭 issue。
 
 pull request 不是提交渠道。组织外作者提交的、只改动索引数据的 PR 会被关闭并指向 issue 表单；维护者仍可以用 PR 做其他改动。索引机器人的 PR 只改数据，且不会由外部贡献者创建。
 

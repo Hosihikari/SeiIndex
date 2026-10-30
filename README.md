@@ -27,7 +27,7 @@ Any project can submit its own `sei/<name>.json` through the submission issue fo
 2. Host the zip at a stable, public URL. A GitHub Release asset pinned to a tag is the simplest option; object storage and static sites work too.
 3. Open a **Submit a sei version** issue: https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml. Enter the sei name and the complete version entry as JSON (artifacts, optional dependencies and selectors).
 4. Accounts with write access to this repository are processed automatically. Other authors need a maintainer to add the `index-submission` label.
-5. The index bot appends the entry to `sei/<name>.json`, adds the name to `index.json`, opens a pull request, dispatches **Validate index**, and enables auto-merge. The pull request merges when validation passes, and the issue closes on merge.
+5. The index bot appends the entry to `sei/<name>.json`, adds the name to `index.json`, opens a pull request, approves the **Validate index** run GitHub holds for it, and enables auto-merge. The pull request merges when validation passes, and the issue closes on merge.
 
 Pull requests are not the submission channel. Pull requests from outside the organization that only touch index data are closed with a pointer to the issue form; maintainers can still use pull requests for other changes. The index bot's pull requests are data-only and are never authored by an external contributor.
 

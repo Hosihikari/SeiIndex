@@ -2,8 +2,8 @@ name: Process sei submission
 
 # Turns an issue-form submission into an index entry. The bot never executes
 # issue content: it parses the body as data, appends the version, opens a PR,
-# dispatches the normal validation, and enables auto-merge. The PR merges only
-# after the required "validate" check passes.
+# approves the PR's held validation run, and enables auto-merge. The PR merges
+# only after the required "validate" check passes.
 on:
   issues:
     types: [opened, edited, labeled, reopened]
@@ -103,6 +103,7 @@ jobs:
           git push --force origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Open the pull request
         id: pr
@@ -145,37 +146,54 @@ jobs:
             gh issue edit "$ISSUE" --repo "$REPO" --remove-label "$label" 2>/dev/null || true
           done
 
-      - name: Dispatch validation
-        id: dispatch
+      - name: Approve the pull request validation run
+        id: validation
         if: steps.pr.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ steps.commit.outputs.branch }}
-          BASE: ${{ steps.commit.outputs.base }}
+          SHA: ${{ steps.commit.outputs.sha }}
         run: |
           set -euo pipefail
-          previous=$(gh run list --repo "$REPO" --workflow validate.yml --branch "$BRANCH" \
-            --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-          gh workflow run validate.yml --repo "$REPO" --ref "$BRANCH" -f base="$BASE"
-          run_id=""
+          find_run() {
+            gh api --method GET "repos/$REPO/actions/runs" \
+              -f branch="$BRANCH" -f event=pull_request -f per_page=10 \
+              | jq -r --arg sha "$SHA" '
+                  [.workflow_runs[] | select(.head_sha == $sha)]
+                  | first
+                  | if . then [.id, (.status // ""), (.conclusion // ""), ((.required_approval // false) | tostring)] | @tsv
+                    else empty end'
+          }
+          run=""
           for attempt in $(seq 1 30); do
-            current=$(gh run list --repo "$REPO" --workflow validate.yml --branch "$BRANCH" \
-              --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-            if [ -n "$current" ] && [ "$current" != "$previous" ]; then
-              run_id="$current"
-              break
-            fi
+            run=$(find_run)
+            [ -n "$run" ] && break
             sleep 2
           done
-          if [ -z "$run_id" ]; then
-            echo "the validation run did not appear" >&2
+          if [ -z "$run" ]; then
+            echo "::error::the pull request validation run did not appear"
             exit 1
+          fi
+          IFS=$'\t' read -r run_id status conclusion approval <<< "$run"
+          if [ "$approval" = "true" ] || [ "$status" = "waiting" ] || [ "$conclusion" = "action_required" ]; then
+            approved=false
+            for attempt in 1 2 3 4 5; do
+              if gh api --method POST "repos/$REPO/actions/runs/$run_id/approve" >/dev/null 2>&1; then
+                approved=true
+                break
+              fi
+              sleep 3
+            done
+            if [ "$approved" != true ]; then
+              echo "::error::could not approve validation run $run_id"
+              exit 1
+            fi
           fi
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
-        if: steps.pr.outcome == 'success'
+        if: steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -191,7 +209,7 @@ jobs:
           exit 1
 
       - name: Comment acceptance
-        if: steps.pr.outcome == 'success'
+        if: steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -203,12 +221,12 @@ jobs:
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
 
       - name: Wait for validation and update labels
-        if: steps.dispatch.outcome == 'success'
+        if: steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
-          RUN: ${{ steps.dispatch.outputs.run }}
+          RUN: ${{ steps.validation.outputs.run }}
         run: |
           set -euo pipefail
           label=validation-failed
