@@ -226,6 +226,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
+          PR: ${{ steps.pr.outputs.number }}
           RUN: ${{ steps.validation.outputs.run }}
         run: |
           set -euo pipefail
@@ -241,3 +242,21 @@ jobs:
               gh issue edit "$ISSUE" --repo "$REPO" --remove-label "$other"
             fi
           done
+
+          if [ "$label" = validation-passed ]; then
+            merged=false
+            for attempt in $(seq 1 60); do
+              state=$(gh pr view "$PR" --repo "$REPO" --json state --jq .state)
+              if [ "$state" = "MERGED" ]; then
+                merged=true
+                break
+              fi
+              [ "$state" = "CLOSED" ] && break
+              sleep 5
+            done
+            if [ "$merged" = true ]; then
+              gh issue close "$ISSUE" --repo "$REPO" --reason completed
+            else
+              echo "::warning::validation passed but the pull request did not merge; leaving the issue open"
+            fi
+          fi
