@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "name": "probe-approval",
+  "versions": [
+    {
+      "version": "0.0.1",
+      "dependencies": [],
+      "artifacts": [
+        {
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/v0/probe-approval.zip",
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "size": 1
+          }
+        }
+      ]
+    }
+  ]
+}
