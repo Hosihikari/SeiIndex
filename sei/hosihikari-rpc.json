@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "name": "hosihikari-rpc",
+  "versions": [
+    {
+      "version": "1.1.0",
+      "dependencies": [
+        {
+          "name": "hosihikari",
+          "version": "[1.2.0,2.0.0)"
+        }
+      ],
+      "artifacts": [
+        {
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/RpcLoader/releases/download/v1.1.0/hosihikari-rpc-1.1.0.zip",
+            "sha256": "c8354a643d20dfecfaf363241feb0c505595dee77769629b1d0b9b02765ad448",
+            "size": 53552
+          }
+        }
+      ]
+    }
+  ]
+}
