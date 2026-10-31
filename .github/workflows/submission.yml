@@ -21,7 +21,7 @@ concurrency:
 jobs:
   submit:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     if: github.event.issue.state == 'open'
     steps:
       - name: Check authorization
@@ -54,22 +54,97 @@ jobs:
           fi
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
 
-      - name: Check out the index
+      - name: Check issue state
+        id: state
         if: steps.gate.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          state=$(gh issue view "$ISSUE" --repo "$REPO" --json state --jq .state)
+          if [ "$state" = "OPEN" ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out the index
+        if: steps.gate.outputs.allowed == 'true' && steps.state.outputs.open == 'true'
         uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
 
+      - name: Acquire submission lock
+        id: lock
+        if: steps.gate.outputs.allowed == 'true' && steps.state.outputs.open == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          lock_branch="internal/submission-lock"
+          deadline=$((SECONDS + 1200))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            git commit --allow-empty -m "submission lock: #$ISSUE"
+            if git push origin "HEAD:refs/heads/$lock_branch" 2>/dev/null; then
+              echo "acquired=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git reset --soft HEAD~1
+            if git fetch -q origin "$lock_branch" 2>/dev/null; then
+              held=$(git log -1 --format=%ct FETCH_HEAD)
+              if [ $(( $(date +%s) - held )) -gt 1800 ]; then
+                gh api --method DELETE "repos/$REPO/git/refs/heads/$lock_branch" >/dev/null 2>&1 || true
+              fi
+            fi
+            sleep 10
+          done
+          echo "::error::timed out waiting for the submission lock"
+          exit 1
+
+      - name: Refresh main
+        if: steps.lock.outputs.acquired == 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Recheck issue state
+        id: state_after
+        if: steps.lock.outputs.acquired == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          state=$(gh issue view "$ISSUE" --repo "$REPO" --json state --jq .state)
+          if [ "$state" = "OPEN" ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Apply submission
         id: apply
-        if: steps.gate.outputs.allowed == 'true'
+        if: steps.gate.outputs.allowed == 'true' && steps.state_after.outputs.open == 'true'
         env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-        run: python3 .github/scripts/apply-submission.py
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          body=$(gh issue view "$ISSUE" --repo "$REPO" --json body --jq .body)
+          ISSUE_BODY="$body" python3 .github/scripts/apply-submission.py
 
       - name: Comment rejection
-        if: steps.gate.outputs.allowed == 'true' && steps.apply.outputs.ok != 'true' && steps.apply.outputs.looks == 'true'
+        if: steps.gate.outputs.allowed == 'true' && steps.state_after.outputs.open == 'true' && steps.apply.outputs.ok != 'true' && steps.apply.outputs.looks == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -86,7 +161,7 @@ jobs:
 
       - name: Commit the entry
         id: commit
-        if: steps.gate.outputs.allowed == 'true' && steps.apply.outputs.ok == 'true'
+        if: steps.gate.outputs.allowed == 'true' && steps.state_after.outputs.open == 'true' && steps.apply.outputs.ok == 'true'
         env:
           NAME: ${{ steps.apply.outputs.name }}
           VERSION: ${{ steps.apply.outputs.version }}
@@ -107,7 +182,7 @@ jobs:
 
       - name: Open the pull request
         id: pr
-        if: steps.commit.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.commit.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -134,7 +209,7 @@ jobs:
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
       - name: Mark validation pending
-        if: steps.pr.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.pr.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -148,7 +223,7 @@ jobs:
 
       - name: Approve the pull request validation run
         id: validation
-        if: steps.pr.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.pr.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -193,7 +268,7 @@ jobs:
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge
-        if: steps.validation.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -209,7 +284,7 @@ jobs:
           exit 1
 
       - name: Comment acceptance
-        if: steps.validation.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -221,7 +296,7 @@ jobs:
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
 
       - name: Wait for validation and update labels
-        if: steps.validation.outcome == 'success'
+        if: steps.state_after.outputs.open == 'true' && steps.validation.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -245,7 +320,7 @@ jobs:
 
           if [ "$label" = validation-passed ]; then
             merged=false
-            for attempt in $(seq 1 60); do
+            for attempt in $(seq 1 120); do
               state=$(gh pr view "$PR" --repo "$REPO" --json state --jq .state)
               if [ "$state" = "MERGED" ]; then
                 merged=true
@@ -260,3 +335,11 @@ jobs:
               echo "::warning::validation passed but the pull request did not merge; leaving the issue open"
             fi
           fi
+
+      - name: Release submission lock
+        if: always() && steps.lock.outputs.acquired == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --method DELETE "repos/$REPO/git/refs/heads/internal/submission-lock" >/dev/null 2>&1 || true
