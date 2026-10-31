@@ -6,6 +6,7 @@
     "hosihikari-csharp",
     "hosihikari-fsharp",
     "hosihikari-hosting",
+    "hosihikari-hosting-endstone",
     "hosihikari-hosting-levilamina",
     "hosihikari-hosting-selfhosted",
     "hosihikari-rpc"
