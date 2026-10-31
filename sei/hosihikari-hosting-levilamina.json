@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "name": "hosihikari-hosting-levilamina",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "dependencies": [
+        {
+          "name": "hosihikari-hosting",
+          "version": "[1.2.1,2.0.0)"
+        }
+      ],
+      "artifacts": [
+        {
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/sei-bundles-v1.0.0/hosihikari-hosting-levilamina-1.0.0.zip",
+            "sha256": "6f77cfc4d537cf17f093527ea70d14d94a91aca01ac904fcf85063004c4e32e6",
+            "size": 303
+          }
+        }
+      ]
+    }
+  ]
+}
