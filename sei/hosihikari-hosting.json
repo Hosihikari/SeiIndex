@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "name": "hosihikari-hosting",
+  "versions": [
+    {
+      "version": "1.2.1",
+      "dependencies": [
+        {
+          "name": "hosihikari",
+          "version": "[1.2.0,2.0.0)"
+        }
+      ],
+      "artifacts": [
+        {
+          "selectors": {
+            "carrier": "hosihikari-hosting-levilamina",
+            "rid": "win-x64"
+          },
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.1/hosihikari-levilamina-windows-x64.zip",
+            "sha256": "7d5f054795f7f1dd01d52f0a92a5bc2b5c2c166aa85ad2fd077fdcfa7f11bae9",
+            "size": 133594
+          }
+        },
+        {
+          "selectors": {
+            "carrier": "hosihikari-hosting-endstone",
+            "rid": "win-x64"
+          },
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.1/hosihikari-endstone-windows-x64.zip",
+            "sha256": "ad75a6ddc43b0b8ead18515c7dba13d5b62ccaef20991b2dfc04a271eec55eca",
+            "size": 232973
+          }
+        },
+        {
+          "selectors": {
+            "carrier": "hosihikari-hosting-endstone",
+            "rid": "linux-x64"
+          },
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.1/hosihikari-endstone-linux-x64.zip",
+            "sha256": "cacc85bf98b4650cad5a109aa3340f0903c9b7787acb77fc1782284d6f9f67e6",
+            "size": 623604
+          }
+        },
+        {
+          "selectors": {
+            "carrier": "hosihikari-hosting-selfhosted",
+            "rid": "linux-x64"
+          },
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.1/hosihikari-selfhosted-linux-x64.zip",
+            "sha256": "14c71c5926dbd8cb77ad716d8bbacfc9285bafa89a8457a0bf1b4c1669be281e",
+            "size": 39418
+          }
+        },
+        {
+          "selectors": {
+            "carrier": "hosihikari-hosting-selfhosted",
+            "rid": "win-x64"
+          },
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.1/hosihikari-selfhosted-windows-x64.zip",
+            "sha256": "115ab24ccecd75f56f2772fb8cdf764bcea7d1f6c3aa6835d34a942d7a23e685",
+            "size": 169091
+          }
+        }
+      ]
+    }
+  ]
+}

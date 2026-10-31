@@ -5,6 +5,7 @@
     "hosihikari",
     "hosihikari-csharp",
     "hosihikari-fsharp",
+    "hosihikari-hosting",
     "hosihikari-rpc"
   ]
 }
