@@ -18,7 +18,7 @@ from pathlib import Path
 NAME_FORBIDDEN = set('/\\:*?"<>|')
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
-ENTRY_KEYS = {"version", "dependencies", "artifacts", "yanked", "deprecated"}
+ENTRY_KEYS = {"version", "dependencies", "artifacts", "yanked", "deprecated", "advisory"}
 ARTIFACT_KEYS = {"selectors", "layout", "source"}
 SOURCE_KEYS = {"url", "sha256", "size"}
 
@@ -63,6 +63,20 @@ def validate_entry(entry, name: str) -> None:
     version = entry.get("version")
     if not isinstance(version, str) or not SEMVER.match(version):
         raise SubmissionError("version must be a SemVer string such as 1.2.0")
+
+    advisory = entry.get("advisory")
+    if advisory is not None:
+        if not isinstance(advisory, dict):
+            raise SubmissionError("advisory must be a JSON object")
+        unknown_advisory = set(advisory) - {"severity", "url"}
+        if unknown_advisory:
+            raise SubmissionError(
+                f"unknown fields in advisory: {', '.join(sorted(unknown_advisory))}")
+        if advisory.get("severity") not in {"low", "moderate", "high", "critical"}:
+            raise SubmissionError("advisory severity must be low, moderate, high, or critical")
+        url = advisory.get("url")
+        if url is not None and not isinstance(url, str):
+            raise SubmissionError("advisory url must be a string")
 
     dependencies = entry.get("dependencies", [])
     if not isinstance(dependencies, list):
