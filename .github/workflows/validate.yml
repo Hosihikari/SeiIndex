@@ -16,7 +16,7 @@ permissions:
 
 env:
   # The validator is released with Seiko. Bump this to adopt a newer one.
-  SK_VERSION: "0.2.3"
+  SK_VERSION: "0.2.4"
 
 jobs:
   validate:
