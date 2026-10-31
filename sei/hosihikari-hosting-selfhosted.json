@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "name": "hosihikari-hosting-selfhosted",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "dependencies": [
+        {
+          "name": "hosihikari-hosting",
+          "version": "[1.2.1,2.0.0)"
+        }
+      ],
+      "artifacts": [
+        {
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/sei-bundles-v1.0.0/hosihikari-hosting-selfhosted-1.0.0.zip",
+            "sha256": "75d7788b973902d4472853b98730a7dd4e7eb3eccbeac6ab39b4db1c444805d6",
+            "size": 302
+          }
+        }
+      ]
+    }
+  ]
+}
