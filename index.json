@@ -3,6 +3,7 @@
   "generatedBy": "SeiIndex maintainers",
   "sei": [
     "hosihikari",
-    "hosihikari-csharp"
+    "hosihikari-csharp",
+    "hosihikari-fsharp"
   ]
 }
