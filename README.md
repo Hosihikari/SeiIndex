@@ -44,8 +44,8 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
 ## Rules
 
 - **Versions are immutable.** Append new versions; never edit an existing version entry or remove one.
-- **Only `yanked` and `deprecated` may change in an existing version.** `yanked: true` hides a version from new resolutions but keeps it available for lock replay; `deprecated` is a human-readable migration message.
-- **Never delete a sei or a version.** Yanking or deprecating is the retirement path.
+- **Only `yanked`, `deprecated`, and `advisory` may change in an existing version.** Package-level `unlisted` and `deprecated` may also change. `yanked: true` hides a version from new resolutions but keeps it available for lock replay; `deprecated` is a human-readable migration message; `advisory.severity: "critical"` blocks new resolutions unless the user passes `--allow-critical`.
+- **Never delete a sei or a version.** Yanking, deprecating, or unlisting is the retirement path.
 - **The `sei` list in `index.json` may only grow.** Removing a name breaks search and is rejected.
 - **Artifacts must be zip archives** with exactly one root `sei.json` (the current store extracts zip only).
 - **The index entry must match the embedded `sei.json`** for `schemaVersion`, `name`, `version`, `dependencies`, `selectors`, and `layout`.
@@ -69,6 +69,8 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
 {
   "schemaVersion": 1,
   "name": "hello-csharp",
+  "unlisted": false,
+  "deprecated": null,
   "versions": [
     {
       "version": "1.0.0",
@@ -87,7 +89,8 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
         }
       ],
       "yanked": false,
-      "deprecated": null
+      "deprecated": null,
+      "advisory": null
     }
   ]
 }
@@ -116,6 +119,9 @@ Fields:
 - `selectors.rid` matches the target platform, for example `win-x64` or `linux-arm64`. Any other selector key names a sei that must be in the dependency graph (the `carrier` convention). Omit `selectors` for a platform-independent artifact.
 - `layout` is `root` (or omitted). Other shapes are not supported yet.
 - `modes` belongs to `sei.json` only; it sets Unix executable bits, for example `{ "sk": "0755" }`. Windows ignores it.
+- `unlisted` belongs to the sei file: `true` hides the name from `sk search`; direct resolution and lock replay keep working.
+- `deprecated` may be set per version or on the sei file. The package-level message is inherited by versions that do not set their own.
+- `advisory` is `{ "severity": "low|moderate|high|critical", "url": "..." }`. A `critical` version is skipped by new resolution unless the user passes `--allow-critical`; lock replay is allowed and warns.
 
 Every version needs at least one artifact, and two artifacts in one version cannot have identical selectors.
 
