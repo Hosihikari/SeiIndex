@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "name": "hosihikari-hosting-endstone",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "dependencies": [
+        {
+          "name": "hosihikari-hosting",
+          "version": "[1.2.1,2.0.0)"
+        }
+      ],
+      "artifacts": [
+        {
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/sei-bundles-v1.0.0/hosihikari-hosting-endstone-1.0.0.zip",
+            "sha256": "aa64d891bf6e8e545de810ce27d51b75a70815d389bbb3fabea7976124909c1e",
+            "size": 300
+          }
+        }
+      ]
+    }
+  ]
+}
