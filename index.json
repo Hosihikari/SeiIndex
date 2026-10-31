@@ -4,6 +4,7 @@
   "sei": [
     "hosihikari",
     "hosihikari-csharp",
-    "hosihikari-fsharp"
+    "hosihikari-fsharp",
+    "hosihikari-rpc"
   ]
 }
