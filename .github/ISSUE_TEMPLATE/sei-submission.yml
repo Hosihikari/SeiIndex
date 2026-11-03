@@ -28,8 +28,18 @@ body:
         {
           "version": "1.2.0",
           "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
           "artifacts": [
             {
+              "rid": "win-x64",
+              "dependencies": [],
+              "prerequisites": [
+                { "name": "hosihikari-hosting-levilamina", "version": "*" }
+              ],
+              "optionalPeers": [],
+              "conflicts": [],
               "layout": "root",
               "source": {
                 "url": "https://github.com/owner/repo/releases/download/v1.2.0/artifact.zip",

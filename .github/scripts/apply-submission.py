@@ -18,8 +18,8 @@ from pathlib import Path
 NAME_FORBIDDEN = set('/\\:*?"<>|')
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
-ENTRY_KEYS = {"version", "dependencies", "artifacts", "yanked", "deprecated", "advisory"}
-ARTIFACT_KEYS = {"selectors", "layout", "source"}
+ENTRY_KEYS = {"version", "dependencies", "prerequisites", "optionalPeers", "conflicts", "artifacts", "yanked", "deprecated", "advisory"}
+ARTIFACT_KEYS = {"rid", "dependencies", "prerequisites", "optionalPeers", "conflicts", "layout", "modes", "source"}
 SOURCE_KEYS = {"url", "sha256", "size"}
 
 
@@ -78,20 +78,10 @@ def validate_entry(entry, name: str) -> None:
         if url is not None and not isinstance(url, str):
             raise SubmissionError("advisory url must be a string")
 
-    dependencies = entry.get("dependencies", [])
-    if not isinstance(dependencies, list):
-        raise SubmissionError("dependencies must be an array")
-    for dependency in dependencies:
-        if not isinstance(dependency, dict):
-            raise SubmissionError("each dependency must be an object")
-        dep_name = dependency.get("name")
-        if not isinstance(dep_name, str) or not valid_name(dep_name):
-            raise SubmissionError(f"invalid dependency name: {dep_name!r}")
-        if dep_name == name:
-            raise SubmissionError("a sei cannot depend on itself")
-        dep_version = dependency.get("version")
-        if dep_version is not None and not isinstance(dep_version, str):
-            raise SubmissionError(f"invalid version range for {dep_name}")
+    validate_relations(entry.get("dependencies", []), name, "dependencies", self_allowed=False)
+    validate_relations(entry.get("prerequisites", []), name, "prerequisites", self_allowed=False)
+    validate_relations(entry.get("optionalPeers", []), name, "optionalPeers", self_allowed=False)
+    validate_relations(entry.get("conflicts", []), name, "conflicts", self_allowed=False)
 
     artifacts = entry.get("artifacts")
     if not isinstance(artifacts, list) or not artifacts:
@@ -105,13 +95,20 @@ def validate_entry(entry, name: str) -> None:
         layout = artifact.get("layout")
         if layout not in (None, "root"):
             raise SubmissionError(f"unsupported layout: {layout!r}")
-        selectors = artifact.get("selectors")
-        if selectors is not None:
-            if not isinstance(selectors, dict) or not all(
+        rid = artifact.get("rid")
+        if rid is not None and (not isinstance(rid, str) or not rid.strip()):
+            raise SubmissionError("rid must be a non-empty string")
+        validate_relations(artifact.get("dependencies", []), name, "artifact dependencies", self_allowed=True)
+        validate_relations(artifact.get("prerequisites", []), name, "artifact prerequisites", self_allowed=True)
+        validate_relations(artifact.get("optionalPeers", []), name, "artifact optional peers", self_allowed=True)
+        validate_relations(artifact.get("conflicts", []), name, "artifact conflicts", self_allowed=True)
+        modes = artifact.get("modes")
+        if modes is not None:
+            if not isinstance(modes, dict) or not all(
                 isinstance(key, str) and isinstance(value, str)
-                for key, value in selectors.items()
+                for key, value in modes.items()
             ):
-                raise SubmissionError("selectors must map strings to strings")
+                raise SubmissionError("modes must map paths to mode strings")
         source = artifact.get("source")
         if not isinstance(source, dict):
             raise SubmissionError("artifact source must be an object")
@@ -136,6 +133,22 @@ def validate_entry(entry, name: str) -> None:
         raise SubmissionError("deprecated must be a string")
 
 
+def validate_relations(relations, name: str, label: str, self_allowed: bool) -> None:
+    if not isinstance(relations, list):
+        raise SubmissionError(f"{label} must be an array")
+    for relation in relations:
+        if not isinstance(relation, dict):
+            raise SubmissionError(f"each entry in {label} must be an object")
+        target = relation.get("name")
+        if not isinstance(target, str) or not valid_name(target):
+            raise SubmissionError(f"invalid name in {label}: {target!r}")
+        if target == name and not self_allowed:
+            raise SubmissionError(f"{label} cannot contain the sei itself")
+        version = relation.get("version")
+        if version is not None and not isinstance(version, str):
+            raise SubmissionError(f"invalid version range for {target}")
+
+
 def write_json(path: Path, value) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -158,18 +171,18 @@ def apply(body: str) -> tuple[str, str]:
     if not index_path.exists():
         raise SubmissionError("index.json not found; run from the index root")
     index = json.loads(index_path.read_text(encoding="utf-8"))
-    if index.get("schemaVersion") != 1:
+    if index.get("schemaVersion") != 2:
         raise SubmissionError("unsupported index schemaVersion")
 
     sei_path = Path("sei") / f"{name}.json"
     if sei_path.exists():
         sei = json.loads(sei_path.read_text(encoding="utf-8"))
-        if sei.get("schemaVersion") != 1:
+        if sei.get("schemaVersion") != 2:
             raise SubmissionError(f"unsupported schemaVersion in {sei_path}")
         if sei.get("name") != name:
             raise SubmissionError(f"{sei_path} declares name {sei.get('name')!r}")
     else:
-        sei = {"schemaVersion": 1, "name": name, "versions": []}
+        sei = {"schemaVersion": 2, "name": name, "versions": []}
 
     versions = sei.get("versions")
     if not isinstance(versions, list):
