@@ -70,8 +70,14 @@ jobs:
 
       - name: Verify index
         run: |
-          if git log -1 --format=%B | grep -q '\[schema-migration\]'; then
-            echo "schema migration commit; the pinned sk cannot read the new schema yet"
+          out="$RUNNER_TEMP/verify.log"
+          if "$RUNNER_TEMP/sk/sk" index verify . --check-artifacts --strict 2>&1 | tee "$out"; then
             exit 0
           fi
-          "$RUNNER_TEMP/sk/sk" index verify . --check-artifacts --strict
+          # Until a release understands the migrated schema, the pinned binary
+          # cannot check it. Bump SK_VERSION to 0.3.x and this stops applying.
+          if grep -q 'unsupported .*schemaVersion 2' "$out"; then
+            echo "::notice::sk $SK_VERSION predates schema 2; upgrade SK_VERSION once 0.3 is released"
+            exit 0
+          fi
+          exit 1
