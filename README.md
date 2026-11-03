@@ -25,7 +25,7 @@ Any project can submit its own `sei/<name>.json` through the submission issue fo
 
 1. Build a zip whose root contains `sei.json` and the payload. Nested directories are allowed; the payload paths are deployed relative to the install root.
 2. Host the zip at a stable, public URL. A GitHub Release asset pinned to a tag is the simplest option; object storage and static sites work too.
-3. Open a **Submit a sei version** issue: https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml. Enter the sei name and the complete version entry as JSON (artifacts, optional dependencies and selectors).
+3. Open a **Submit a sei version** issue: https://github.com/Hosihikari/SeiIndex/issues/new?template=sei-submission.yml. Enter the sei name and the complete version entry as JSON (artifacts and optional relations).
 4. Accounts with write access to this repository are processed automatically. Other authors need a maintainer to add the `index-submission` label.
 5. The index bot appends the entry to `sei/<name>.json`, adds the name to `index.json`, opens a pull request, approves the **Validate index** run GitHub holds for it, and enables auto-merge. The pull request merges when validation passes, and the submission job closes the issue after the merge.
 
@@ -48,7 +48,7 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
 - **Never delete a sei or a version.** Yanking, deprecating, or unlisting is the retirement path.
 - **The `sei` list in `index.json` may only grow.** Removing a name breaks search and is rejected.
 - **Artifacts must be zip archives** with exactly one root `sei.json` (the current store extracts zip only).
-- **The index entry must match the embedded `sei.json`** for `schemaVersion`, `name`, `version`, `dependencies`, `selectors`, and `layout`.
+- **The index entry must match the embedded `sei.json`** for `schemaVersion`, `name`, `version`, all four relations at both scopes, `rid`, `layout`, and `modes`.
 - **Checksums are exact.** `sha256` is 64 lowercase hex characters and `size` is the archive size in bytes; CI downloads every artifact and verifies both.
 
 ## Schema
@@ -57,18 +57,18 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedBy": "SeiIndex maintainers",
-  "sei": ["hello-csharp"]
+  "sei": ["hello-seiko"]
 }
 ```
 
-`sei/hello-csharp.json`:
+`sei/hello-seiko.json`:
 
 ```json
 {
-  "schemaVersion": 1,
-  "name": "hello-csharp",
+  "schemaVersion": 2,
+  "name": "hello-seiko",
   "unlisted": false,
   "deprecated": null,
   "versions": [
@@ -77,12 +77,21 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
       "dependencies": [
         { "name": "hosihikari", "version": "[1.1.0,1.2.0)" }
       ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
       "artifacts": [
         {
-          "selectors": { "rid": "win-x64" },
+          "rid": "win-x64",
+          "dependencies": [],
+          "prerequisites": [
+            { "name": "hosihikari-hosting-levilamina", "version": "*" }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/example/hello-csharp/releases/download/v1.0.0/hello-csharp-win-x64.zip",
+            "url": "https://github.com/example/hello-seiko/releases/download/v1.0.0/hello-seiko-win-x64.zip",
             "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "size": 12345
           }
@@ -100,15 +109,26 @@ The zip's root `sei.json` for that artifact:
 
 ```json
 {
-  "schemaVersion": 1,
-  "name": "hello-csharp",
+  "schemaVersion": 2,
+  "name": "hello-seiko",
   "version": "1.0.0",
   "dependencies": [
     { "name": "hosihikari", "version": "[1.1.0,1.2.0)" }
   ],
-  "selectors": { "rid": "win-x64" },
-  "layout": "root",
-  "modes": { "hello-csharp": "0755" }
+  "prerequisites": [],
+  "optionalPeers": [],
+  "conflicts": [],
+  "artifact": {
+    "rid": "win-x64",
+    "dependencies": [],
+    "prerequisites": [
+      { "name": "hosihikari-hosting-levilamina", "version": "*" }
+    ],
+    "optionalPeers": [],
+    "conflicts": [],
+    "layout": "root",
+    "modes": { "hello-seiko": "0755" }
+  }
 }
 ```
 
@@ -116,14 +136,15 @@ Fields:
 
 - `version` uses NuGet SemVer. Pre-releases are excluded unless the declaration asks for them.
 - `dependencies[].version` is a NuGet version range; `null`, omitted, or `"*"` means any version.
-- `selectors.rid` matches the target platform, for example `win-x64` or `linux-arm64`. Any other selector key names a sei that must be in the dependency graph (the `carrier` convention). Omit `selectors` for a platform-independent artifact.
+- Relations are version-level at the version object and artifact-level inside the artifact object. `prerequisites` must already be in the graph and drive artifact selection; `optionalPeers` must match when present; `conflicts` excludes versions.
+- `rid` matches the target platform, for example `win-x64` or `linux-arm64`. Omit `rid` for a platform-independent artifact.
 - `layout` is `root` (or omitted). Other shapes are not supported yet.
-- `modes` belongs to `sei.json` only; it sets Unix executable bits, for example `{ "sk": "0755" }`. Windows ignores it.
+- `modes` belongs to the embedded `sei.json` only; it sets Unix executable bits, for example `{ "sk": "0755" }`. Windows ignores it.
 - `unlisted` belongs to the sei file: `true` hides the name from `sk search`; direct resolution and lock replay keep working.
 - `deprecated` may be set per version or on the sei file. The package-level message is inherited by versions that do not set their own.
 - `advisory` is `{ "severity": "low|moderate|high|critical", "url": "..." }`. A `critical` version is skipped by new resolution unless the user passes `--allow-critical`; lock replay is allowed and warns.
 
-Every version needs at least one artifact, and two artifacts in one version cannot have identical selectors.
+Every version needs at least one artifact, and two artifacts in one version cannot have identical `rid` and `prerequisites`.
 
 ## Verify locally
 
@@ -131,4 +152,4 @@ Every version needs at least one artifact, and two artifacts in one version cann
 sk index verify . --check-artifacts --strict
 ```
 
-The command prints findings and exits non-zero on errors (or on warnings with `--strict`). `--json` emits the usual Seiko envelope. CI runs the same command with a pinned `sk` version, plus `git diff` checks for the append-only rules.
+The command prints findings and exits non-zero on errors (or on warnings with `--strict`). `--json` emits the usual Seiko envelope. CI runs the same command with a pinned `sk` version, plus `git diff` checks for the append-only rules. The 0.3 schema migration is a one-time exception to those rules; after it, versions are append-only again.

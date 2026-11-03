@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "hosihikari",
   "versions": [
     {
@@ -7,6 +7,10 @@
       "dependencies": [],
       "artifacts": [
         {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
           "layout": "root",
           "source": {
             "url": "https://github.com/HosihikariFramework/PluginManager/releases/download/v1.2.0/hosihikari-core-1.2.0.zip",
@@ -14,7 +18,10 @@
             "size": 585086
           }
         }
-      ]
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": []
     }
   ]
 }

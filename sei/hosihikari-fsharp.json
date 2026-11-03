@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "hosihikari-fsharp",
   "versions": [
     {
@@ -12,6 +12,10 @@
       ],
       "artifacts": [
         {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
           "layout": "root",
           "source": {
             "url": "https://github.com/HosihikariFramework/FSharpLoader/releases/download/v1.1.0/hosihikari-fsharp-1.1.0.zip",
@@ -19,7 +23,10 @@
             "size": 11177085
           }
         }
-      ]
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": []
     }
   ]
 }

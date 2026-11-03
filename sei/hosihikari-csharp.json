@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "hosihikari-csharp",
   "versions": [
     {
@@ -12,6 +12,10 @@
       ],
       "artifacts": [
         {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
           "layout": "root",
           "source": {
             "url": "https://github.com/HosihikariFramework/CSharpLoader/releases/download/v1.1.0/hosihikari-csharp-1.1.0.zip",
@@ -19,7 +23,10 @@
             "size": 5625575
           }
         }
-      ]
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": []
     }
   ]
 }

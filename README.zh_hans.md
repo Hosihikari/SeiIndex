@@ -48,7 +48,7 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 - **不得删除 sei 或版本。** 退役方式是 yank 或 deprecate。
 - **`index.json` 的 `sei` 列表只能增长。** 删除名称会破坏搜索，会被拒绝。
 - **构件必须是 zip 归档**，根目录恰好一份 `sei.json`（当前存储只解 zip）。
-- **索引条目必须与内嵌 `sei.json` 一致**：`schemaVersion`、`name`、`version`、`dependencies`、`selectors` 与 `layout`。
+- **索引条目必须与内嵌 `sei.json` 一致**：`schemaVersion`、`name`、`version`、两个作用域的四类关系、`rid`、`layout` 与 `modes`。
 - **校验和必须精确。** `sha256` 是 64 位小写十六进制，`size` 是归档字节数；CI 会下载每个构件并核对两者。
 
 ## Schema
@@ -57,30 +57,39 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedBy": "SeiIndex maintainers",
-  "sei": ["hello-csharp"]
+  "sei": ["hello-seiko"]
 }
 ```
 
-`sei/hello-csharp.json`：
+`sei/hello-seiko.json`：
 
 ```json
 {
-  "schemaVersion": 1,
-  "name": "hello-csharp",
+  "schemaVersion": 2,
+  "name": "hello-seiko",
   "versions": [
     {
       "version": "1.0.0",
       "dependencies": [
         { "name": "hosihikari", "version": "[1.1.0,1.2.0)" }
       ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
       "artifacts": [
         {
-          "selectors": { "rid": "win-x64" },
+          "rid": "win-x64",
+          "dependencies": [],
+          "prerequisites": [
+            { "name": "hosihikari-hosting-levilamina", "version": "*" }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/example/hello-csharp/releases/download/v1.0.0/hello-csharp-win-x64.zip",
+            "url": "https://github.com/example/hello-seiko/releases/download/v1.0.0/hello-seiko-win-x64.zip",
             "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "size": 12345
           }
@@ -97,15 +106,26 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 ```json
 {
-  "schemaVersion": 1,
-  "name": "hello-csharp",
+  "schemaVersion": 2,
+  "name": "hello-seiko",
   "version": "1.0.0",
   "dependencies": [
     { "name": "hosihikari", "version": "[1.1.0,1.2.0)" }
   ],
-  "selectors": { "rid": "win-x64" },
-  "layout": "root",
-  "modes": { "hello-csharp": "0755" }
+  "prerequisites": [],
+  "optionalPeers": [],
+  "conflicts": [],
+  "artifact": {
+    "rid": "win-x64",
+    "dependencies": [],
+    "prerequisites": [
+      { "name": "hosihikari-hosting-levilamina", "version": "*" }
+    ],
+    "optionalPeers": [],
+    "conflicts": [],
+    "layout": "root",
+    "modes": { "hello-seiko": "0755" }
+  }
 }
 ```
 
@@ -113,11 +133,12 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 - `version` 使用 NuGet SemVer。默认排除预发布版，除非声明中要求。
 - `dependencies[].version` 是 NuGet 版本范围；`null`、省略或 `"*"` 表示任意版本。
-- `selectors.rid` 匹配目标平台，例如 `win-x64` 或 `linux-arm64`。其他选择器键的值是必须出现在依赖图中的 sei 名（`carrier` 约定）。平台无关的构件省略 `selectors`。
+- 关系分版本级（版本对象上）与构件级（构件对象内）。`prerequisites` 必须已在图中，并参与构件选择；`optionalPeers` 存在时必须匹配；`conflicts` 排除版本。
+- `rid` 匹配目标平台，例如 `win-x64` 或 `linux-arm64`。平台无关的构件省略 `rid`。
 - `layout` 为 `root`（或省略）。其他形状暂不支持。
-- `modes` 只属于 `sei.json`；它设置 Unix 可执行位，例如 `{ "sk": "0755" }`。Windows 忽略。
+- `modes` 只属于内嵌 `sei.json`；它设置 Unix 可执行位，例如 `{ "sk": "0755" }`。Windows 忽略。
 
-每个版本至少需要一个构件；同一版本中的两个构件不能有完全相同的选择器。
+每个版本至少需要一个构件；同一版本中的两个构件不能有相同的 `rid` 与 `prerequisites`。
 
 ## 本地校验
 
@@ -125,4 +146,4 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 sk index verify . --check-artifacts --strict
 ```
 
-命令会打印发现的问题，出错时以非零退出（`--strict` 时警告也算失败）。`--json` 输出 Seiko 常用的信封。CI 使用固定版本的 `sk` 运行同一命令，并用 `git diff` 检查追加规则。
+命令会打印发现的问题，出错时以非零退出（`--strict` 时警告也算失败）。`--json` 输出 Seiko 常用的信封。CI 使用固定版本的 `sk` 运行同一命令，并用 `git diff` 检查追加规则。0.3 的 schema 迁移是规则的一次性例外；迁移完成后版本重新只追加。
