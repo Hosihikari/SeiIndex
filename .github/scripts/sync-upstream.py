@@ -118,15 +118,35 @@ def write(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def verify(path: Path) -> None:
+def verify(path: Path, artifacts: bool = False) -> None:
     """Run the same structural rules the CI runs, so a bad file never merges."""
-    result = subprocess.run(
-        [str(SK), "index", "verify", str(path)],
-        capture_output=True,
-        text=True,
-    )
+    command = [str(SK), "index", "verify", str(path)]
+    if artifacts:
+        command.append("--check-artifacts")
+    result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode != 0:
-        raise SyncError(f"{FILE_NAME} failed verification:\n{result.stdout}{result.stderr}")
+        raise SyncError(f"{FILE_NAME} failed verification:" + result.stdout + result.stderr)
+
+
+def verify_new_versions(name: str, entries: list[dict]) -> None:
+    """Download and check only the versions this refresh adds.
+
+    Re-checking the whole history on every refresh would make a long-lived
+    entry slow and could wedge it on a vendor that has since gone away; the
+    periodic full pass covers old versions instead.
+    """
+    if not entries:
+        return
+    subset = {
+        "schemaVersion": 2,
+        "name": name,
+        "project": {"description": "refresh subset", "authors": ["check"], "license": "MIT"},
+        "versions": entries,
+    }
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / FILE_NAME
+        path.write_text(json.dumps(subset, ensure_ascii=False), encoding="utf-8")
+        verify(path, artifacts=True)
 
 
 def strip(entry: dict, keys: set[str]) -> dict:
@@ -237,8 +257,9 @@ def sync_one(name: str, url: str | None, registration: bool) -> str:
     with tempfile.TemporaryDirectory() as directory:
         staged = Path(directory) / FILE_NAME
         staged.write_bytes(data)
-        # A maintainer file may not carry the index-side fields.
-        verify(staged)
+        # A maintainer file may not carry the index-side fields, and a first
+        # import checks every artifact it brings.
+        verify(staged, artifacts=registration)
         upstream = load(staged)
 
     maintainers = (existing or {}).get("maintainers") or [
@@ -252,6 +273,8 @@ def sync_one(name: str, url: str | None, registration: bool) -> str:
 
     merged = merge_package(name, upstream, existing, maintainers)
     added = merged.pop("_added")
+    if not registration:
+        verify_new_versions(name, merged["versions"][len(existing["versions"]):])
     merged["upstream"] = {"url": url, "sha256": digest}
     write(path, merged)
 
