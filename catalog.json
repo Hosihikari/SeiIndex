@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "sei": [
+    {
+      "name": "hosihikari",
+      "version": "1.2.0",
+      "description": "Core of the Hosihikari framework: discovers plugin packages, loads them in dependency order and drives their lifecycle.",
+      "tags": [
+        "core",
+        "framework",
+        "plugin-manager"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-csharp",
+      "version": "1.1.0",
+      "description": "C# plugin loader for the Hosihikari framework; compiles .cs sources at load time.",
+      "tags": [
+        "csharp",
+        "framework",
+        "loader"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-fsharp",
+      "version": "1.1.0",
+      "description": "F# plugin loader for the Hosihikari framework; compiles .fsx sources at load time.",
+      "tags": [
+        "framework",
+        "fsharp",
+        "loader"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-hosting",
+      "version": "1.2.1",
+      "description": "Hosting contract of the Hosihikari framework: the hosting surfaces a server implementation must provide.",
+      "tags": [
+        "framework",
+        "hosting"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-hosting-endstone",
+      "version": "1.0.0",
+      "description": "Endstone hosting implementation for the Hosihikari framework.",
+      "tags": [
+        "endstone",
+        "framework",
+        "hosting"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-hosting-levilamina",
+      "version": "1.0.0",
+      "description": "LeviLamina hosting implementation for the Hosihikari framework.",
+      "tags": [
+        "framework",
+        "hosting",
+        "levilamina"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-hosting-selfhosted",
+      "version": "1.0.0",
+      "description": "Self-hosted hosting implementation for the Hosihikari framework, for driving a raw BDS process.",
+      "tags": [
+        "bds",
+        "framework",
+        "hosting"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    },
+    {
+      "name": "hosihikari-rpc",
+      "version": "1.1.0",
+      "description": "Out-of-process RPC loader for the Hosihikari framework, for plugins that cannot be compiled to IL.",
+      "tags": [
+        "framework",
+        "loader",
+        "rpc"
+      ],
+      "license": "GPL-3.0-only",
+      "unlisted": false
+    }
+  ]
+}
