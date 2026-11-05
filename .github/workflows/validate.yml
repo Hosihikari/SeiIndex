@@ -35,17 +35,19 @@ jobs:
         run: |
           set -euo pipefail
           # A schema migration rewrites every entry once; the marker keeps the
-          # exception to that one commit.
-          if git log -1 --format=%B | grep -q '\[schema-migration\]'; then
-            echo "schema migration commit; skipping the append-only check"
-            exit 0
-          fi
+          # exception to that one commit. On a pull request HEAD can be the
+          # merge commit, so scan the whole range instead of the tip.
           base="${PR_BASE:-}"
           if [ -z "$base" ]; then
             base="${DISPATCH_BASE:-}"
           fi
           if [ -z "$base" ]; then
             base="${PUSH_BEFORE:-}"
+          fi
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+            && git log "$base..HEAD" --format=%B | grep -q '\[schema-migration\]'; then
+            echo "schema migration commit; skipping the append-only check"
+            exit 0
           fi
           case "$base" in
             ""|0000000000000000000000000000000000000000)
