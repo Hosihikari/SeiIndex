@@ -192,6 +192,8 @@ A registered package is mirrored from a `sei-index.json` the maintainers publish
 - **The mirror is append-only**: new versions are appended, `project` and retirement text may change, a rewritten or removed version fails the refresh and must ship as a new version.
 - **Source overlay** is index-side: `sourceYanked`, `sourceAdvisories`, `sourceUnlisted`, `sourceDeprecated` live in the mirror and survive every refresh.
 - **`upstream` and `maintainers` are index-side too**; a maintainer file must not declare them.
+- **Maintainer changes** go through the *Change maintainers* form and must be opened by a current maintainer; removing the last one needs a `maintainers-approved` label from an index maintainer.
+
 
 A maintainer file uses the same `SeiIndex` schema plus `project`, and nothing else index-side. Validate it locally with `sk index verify ./sei-index.json` before pushing.
 

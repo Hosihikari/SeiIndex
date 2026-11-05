@@ -1,0 +1,98 @@
+name: Change maintainers
+
+# A current maintainer of a registered sei adds or removes a maintainer.
+# Removing the last one additionally needs the `maintainers-approved` label
+# from an index maintainer (ADR-0033).
+
+on:
+  issues:
+    types: [opened, edited, labeled, reopened]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: maintainers-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    if: >-
+      github.event.issue.state == 'open' &&
+      contains(github.event.issue.labels.*.name, 'maintainers')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Read the form
+        id: form
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          body=$(gh issue view "$ISSUE" --repo "${{ github.repository }}" --json body --jq .body)
+          field() { printf '%s\n' "$body" | awk -v h="### $1" '$0==h{getline; print; exit}' | tr -d '[:space:]'; }
+          name=$(field "Sei name")
+          action=$(field "Action")
+          login=$(field "GitHub login")
+          if [ -z "$name" ] || [ -z "$action" ] || [ -z "$login" ]; then
+            echo "::error::the issue is missing a field"
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+          echo "login=$login" >> "$GITHUB_OUTPUT"
+          case ",$LABELS," in
+            *,maintainers-approved,*) echo "approved=1" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Apply
+        env:
+          SENDER: ${{ github.event.issue.user.login }}
+          APPROVED: ${{ steps.form.outputs.approved }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/update-maintainers.py \
+            "${{ steps.form.outputs.name }}" \
+            "${{ steps.form.outputs.action }}" \
+            "${{ steps.form.outputs.login }}"
+
+      - name: Open the pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          NAME: ${{ steps.form.outputs.name }}
+          ACTION: ${{ steps.form.outputs.action }}
+          LOGIN: ${{ steps.form.outputs.login }}
+        run: |
+          set -euo pipefail
+          branch="maintainers/issue-$ISSUE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -B "$branch"
+          git add "sei/$NAME.json"
+          git commit -q -m "sei: $ACTION maintainer $LOGIN for $NAME (#$ISSUE)"
+          git push -q --force origin "$branch"
+          number=$(gh pr list --repo "${{ github.repository }}" --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$number" ]; then
+            number=$(gh pr create --repo "${{ github.repository }}" --base main --head "$branch" \
+              --title "sei: $ACTION maintainer $LOGIN for $NAME (#$ISSUE)" \
+              --body "Closes #$ISSUE" --json number --jq .number)
+          fi
+          gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "Applied in #$number; it merges when validation passes."
+
+      - name: Report the rejection
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "The change was rejected; see the workflow log. Fix the form and reapply the label."

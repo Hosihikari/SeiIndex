@@ -1,0 +1,38 @@
+name: Change maintainers
+description: Add or remove a maintainer of a registered sei.
+labels: ["maintainers"]
+title: "[maintainers] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Only a current maintainer may open this. The bot checks the issue author
+        against the package's `maintainers` list.
+
+        Removing the last maintainer needs a maintainer of this index to add the
+        `maintainers-approved` label.
+  - type: input
+    id: name
+    attributes:
+      label: Sei name
+      description: The registered name.
+      placeholder: hello-seiko
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: Action
+      options:
+        - add
+        - remove
+    validations:
+      required: true
+  - type: input
+    id: login
+    attributes:
+      label: GitHub login
+      description: Without the leading `@`.
+      placeholder: someone
+    validations:
+      required: true

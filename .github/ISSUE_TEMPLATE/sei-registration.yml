@@ -1,5 +1,6 @@
 name: Register a sei
 description: Register a package whose sei-index.json you maintain.
+labels: ["registration"]
 title: "[register] "
 body:
   - type: markdown
