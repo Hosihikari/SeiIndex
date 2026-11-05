@@ -74,11 +74,15 @@ jobs:
           # disagree with installation. `index catalog` ships with the first
           # release after 0.3.0, so skip the check while the pinned validator
           # predates it.
-          if ! "$RUNNER_TEMP/sk/sk" index catalog --help >/dev/null 2>&1; then
+          out="$RUNNER_TEMP/catalog.log"
+          status=0
+          "$RUNNER_TEMP/sk/sk" index catalog . --check >"$out" 2>&1 || status=$?
+          cat "$out"
+          if grep -q "Unrecognized command" "$out"; then
             echo "::notice::sk $SK_VERSION has no 'index catalog'; skipping the catalog check"
             exit 0
           fi
-          "$RUNNER_TEMP/sk/sk" index catalog . --check
+          exit "$status"
 
       - name: Verify index
         run: |
