@@ -1,0 +1,50 @@
+name: Build sei-index.json
+description: >-
+  Write or update a sei-index.json from release artifacts, using each
+  artifact's root sei.json, and validate the result.
+
+inputs:
+  index-path:
+    description: Path to the sei-index.json in the caller's repository.
+    required: false
+    default: sei-index.json
+  artifacts:
+    description: >-
+      JSON array of built artifacts. Each entry is
+      {"rid": "win-x64" | null, "path": "dist/hello.zip", "url": "https://..."}.
+    required: true
+  sk-version:
+    description: Pinned Seiko CLI version used for validation.
+    required: false
+    default: "0.3.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Download sk
+      shell: bash
+      run: |
+        set -euo pipefail
+        base="https://github.com/Hosihikari/Seiko/releases/download/v${{ inputs.sk-version }}"
+        asset="sk-${{ inputs.sk-version }}-linux-x64.tar.gz"
+        curl -fsSL -o "$RUNNER_TEMP/$asset" "$base/$asset"
+        curl -fsSL -o "$RUNNER_TEMP/SHA256SUMS" "$base/SHA256SUMS"
+        (cd "$RUNNER_TEMP" && sha256sum -c SHA256SUMS --ignore-missing)
+        mkdir -p "$RUNNER_TEMP/sk"
+        tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/sk"
+        chmod +x "$RUNNER_TEMP/sk/sk"
+        "$RUNNER_TEMP/sk/sk" --version
+
+    - name: Write and verify the entry
+      shell: bash
+      env:
+        SPEC: ${{ inputs.artifacts }}
+        INDEX_PATH: ${{ inputs.index-path }}
+      run: |
+        set -euo pipefail
+        printf '%s' "$SPEC" > "$RUNNER_TEMP/spec.json"
+        mkdir -p "$(dirname "$INDEX_PATH")"
+        python3 "${{ github.action_path }}/build-package-index.py" "$INDEX_PATH" "$RUNNER_TEMP/spec.json"
+        # Structural validation only: the artifacts are already uploaded, and
+        # the index re-checks their bytes when it mirrors the file.
+        "$RUNNER_TEMP/sk/sk" index verify "$INDEX_PATH" --strict
