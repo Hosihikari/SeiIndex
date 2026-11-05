@@ -39,9 +39,9 @@
           "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/HosihikariFramework/CSharpLoader/releases/download/v1.1.0/hosihikari-csharp-1.1.0.zip",
-            "sha256": "b132e0ecc7b88878923c42b68dfa84f5ca49d62f6b7315ef0adf344a8993b529",
-            "size": 5625575
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/sei-migration-v1/hosihikariframework-hosihikari-csharp-1.1.0.zip",
+            "sha256": "530c745a1c085c34d9c6624170f0ba42634c5f0933928dfc6ccf8e20bc2db68d",
+            "size": 5625257
           }
         }
       ],

@@ -39,9 +39,9 @@
           "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/sei-bundles-v1.0.0/hosihikari-hosting-selfhosted-1.0.0.zip",
-            "sha256": "75d7788b973902d4472853b98730a7dd4e7eb3eccbeac6ab39b4db1c444805d6",
-            "size": 302
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/sei-migration-v1/hosihikariframework-hosihikari-hosting-selfhosted-1.0.0.zip",
+            "sha256": "70b2a213e0f40f9f42ee28e132f1bf448dbd0a77021a3da80938320c543f1bf7",
+            "size": 312
           }
         }
       ],

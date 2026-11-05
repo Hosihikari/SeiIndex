@@ -79,21 +79,49 @@ def rebuilt(data: bytes, manifest: dict) -> bytes:
     return buffer.getvalue()
 
 
-def upload(url: str, path: Path) -> None:
-    # https://github.com/<owner>/<repo>/releases/download/<tag>/<asset>
-    parts = url.split("/")
-    owner, repo, tag, asset = parts[3], parts[4], parts[7], parts[9]
+MIGRATION_TAG = "sei-migration-v1"
+MIGRATION_REPO = "Hosihikari/SeiIndex"
+
+
+def ensure_release() -> None:
+    """The upstream releases are immutable, so rewritten zips live here."""
+    existing = subprocess.run(
+        ["gh", "release", "view", MIGRATION_TAG, "--repo", MIGRATION_REPO],
+        capture_output=True,
+    )
+    if existing.returncode == 0:
+        return
     subprocess.run(
-        ["gh", "release", "upload", f"{tag}", "--repo", f"{owner}/{repo}", str(path), "--clobber"],
+        [
+            "gh", "release", "create", MIGRATION_TAG,
+            "--repo", MIGRATION_REPO,
+            "--title", "sei migration artifacts (schema 2)",
+            "--notes",
+            "Artifacts whose only change is the root sei.json rewritten to schema 2 "
+            "for the 0.3 migration (ADR-0030). Original release assets are immutable "
+            "and were left untouched.",
+        ],
         check=True,
         capture_output=True,
         env={**os.environ, "HTTPS_PROXY": PROXY, "https_proxy": PROXY},
     )
 
 
+def upload(name: str, path: Path) -> str:
+    subprocess.run(
+        ["gh", "release", "upload", MIGRATION_TAG, "--repo", MIGRATION_REPO, str(path)],
+        check=True,
+        capture_output=True,
+        env={**os.environ, "HTTPS_PROXY": PROXY, "https_proxy": PROXY},
+    )
+    return f"https://github.com/{MIGRATION_REPO}/releases/download/{MIGRATION_TAG}/{name}"
+
+
 def main() -> int:
     apply = "--apply" in sys.argv
     import hashlib
+    if apply:
+        ensure_release()
 
     changed = 0
     for path in sorted(SEI_DIR.glob("*.json")):
@@ -130,16 +158,19 @@ def main() -> int:
                     print(f"!! mismatch for {source['url']}\n   index={expect}\n   file={actual}")
                     return 1
                 out = rebuilt(data, migrated)
+                # Disambiguate by owner so same-named assets never collide.
+                owner = source["url"].split("/")[3].lower()
+                name = f"{owner}-{source['url'].rsplit('/', 1)[1]}"
                 source["sha256"] = hashlib.sha256(out).hexdigest()
                 source["size"] = len(out)
                 touched = True
                 changed += 1
-                print(f"{'upload' if apply else 'would upload'} {source['url']} -> {source['sha256'][:12]}")
+                print(f"{'upload' if apply else 'would upload'} {source['url']} -> {name} {source['sha256'][:12]}")
                 if apply:
                     with tempfile.TemporaryDirectory() as directory:
-                        staged = Path(directory) / source["url"].rsplit("/", 1)[1]
+                        staged = Path(directory) / name
                         staged.write_bytes(out)
-                        upload(source["url"], staged)
+                        source["url"] = upload(name, staged)
         if touched and apply:
             path.write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
