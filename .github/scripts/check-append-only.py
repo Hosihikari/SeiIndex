@@ -3,9 +3,11 @@
 
 Usage: check-append-only.py <base-ref>
 
-A pull request may add sei files, append versions, change yanked/deprecated,
-and add names to the root list. It may not delete files or versions, rewrite
-an existing version, or remove a name from the root list.
+A pull request may add sei files, append versions, change retirement state
+(yanked/deprecated/advisory and the source overlay), and add names to the root
+list. It may not delete files or versions, rewrite an existing version, or
+remove a name from the root list. Package-level `project` is free to change;
+`catalog.json` is derived and is not checked here.
 """
 
 from __future__ import annotations
@@ -14,7 +16,9 @@ import json
 import subprocess
 import sys
 
-MUTABLE_KEYS = {"yanked", "deprecated"}
+# Fields an existing version may still change: the maintainer's retirement
+# state and the source-side overlay (ADR-0033).
+MUTABLE_KEYS = {"yanked", "deprecated", "advisory", "sourceYanked", "sourceAdvisories"}
 ZERO = "0" * 40
 
 

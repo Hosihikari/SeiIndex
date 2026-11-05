@@ -16,7 +16,7 @@ permissions:
 
 env:
   # The validator is released with Seiko. Bump this to adopt a newer one.
-  SK_VERSION: "0.2.4"
+  SK_VERSION: "0.3.0"
 
 jobs:
   validate:
@@ -68,14 +68,30 @@ jobs:
           chmod +x "$RUNNER_TEMP/sk/sk"
           "$RUNNER_TEMP/sk/sk" --version
 
+      - name: Check catalog is current
+        run: |
+          # The catalog is generated from the mirrors; a stale one makes search
+          # disagree with installation. `index catalog` ships with the first
+          # release after 0.3.0, so skip the check while the pinned validator
+          # predates it.
+          out="$RUNNER_TEMP/catalog.log"
+          status=0
+          "$RUNNER_TEMP/sk/sk" index catalog . --check >"$out" 2>&1 || status=$?
+          cat "$out"
+          if grep -q "Unrecognized command" "$out"; then
+            echo "::notice::sk $SK_VERSION has no 'index catalog'; skipping the catalog check"
+            exit 0
+          fi
+          exit "$status"
+
       - name: Verify index
         run: |
           out="$RUNNER_TEMP/verify.log"
           if "$RUNNER_TEMP/sk/sk" index verify . --check-artifacts --strict 2>&1 | tee "$out"; then
             exit 0
           fi
-          # Until a release understands the migrated schema, the pinned binary
-          # cannot check it. Bump SK_VERSION to 0.3.x and this stops applying.
+          # The pinned validator (0.3.0) understands schema 2, but not the
+          # project/external fields; a future bump removes the "unknown" noise.
           if grep -q 'unsupported .*schemaVersion 2' "$out"; then
             echo "::notice::sk $SK_VERSION predates schema 2; upgrade SK_VERSION once 0.3 is released"
             exit 0
