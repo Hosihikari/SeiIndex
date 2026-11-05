@@ -1,0 +1,156 @@
+name: Register sei
+
+# One package per issue. A maintainer registers the name and the public
+# sei-index.json URL; a maintainer with write access approves by labeling the
+# issue `register-approved`. The bot fetches, validates, mirrors, and opens a
+# pull request. See ADR-0033.
+
+on:
+  issues:
+    types: [opened, edited, labeled, reopened]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: register-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  register:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    if: >-
+      github.event.issue.state == 'open' &&
+      contains(github.event.issue.labels.*.name, 'registration')
+    steps:
+      - name: Check authorization
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          ASSOC: ${{ github.event.issue.author_association }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          trusted=false
+          case "$ASSOC" in
+            OWNER|MEMBER|COLLABORATOR) trusted=true ;;
+          esac
+          if [ "$trusted" != true ]; then
+            permission=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq .permission 2>/dev/null || true)
+            case "$permission" in
+              admin|maintain|write) trusted=true ;;
+            esac
+          fi
+          approved=false
+          case ",$LABELS," in
+            *,register-approved,*) approved=true ;;
+          esac
+          echo "allowed=$approved" >> "$GITHUB_OUTPUT"
+          if [ "$approved" != true ]; then
+            echo "::notice::waiting for a maintainer to add the register-approved label"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.allowed == 'true'
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Download sk
+        if: steps.gate.outputs.allowed == 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/Hosihikari/Seiko/releases/download/v${SK_VERSION}"
+          asset="sk-${SK_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$asset" "$base/$asset"
+          curl -fsSL -o "$RUNNER_TEMP/SHA256SUMS" "$base/SHA256SUMS"
+          (cd "$RUNNER_TEMP" && sha256sum -c SHA256SUMS --ignore-missing)
+          mkdir -p "$RUNNER_TEMP/sk"
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/sk"
+          chmod +x "$RUNNER_TEMP/sk/sk"
+          echo "SK_BIN=$RUNNER_TEMP/sk/sk" >> "$GITHUB_ENV"
+
+      - name: Apply the registration
+        id: apply
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          SENDER: ${{ github.event.issue.user.login }}
+        run: |
+          set -euo pipefail
+          body=$(gh issue view "$ISSUE" --repo "$REPO" --json body --jq .body)
+          name=$(printf '%s\n' "$body" | awk '/^### Sei name$/{getline; print; exit}' | tr -d '[:space:]')
+          url=$(printf '%s\n' "$body" | grep -oE 'https://[^[:space:]<>)]+sei-index\.json' | head -1 || true)
+          if [ -z "$name" ]; then
+            echo "::error::the issue has no sei name"
+            exit 1
+          fi
+          if [ -z "$url" ]; then
+            echo "::error::the issue has no sei-index.json URL"
+            exit 1
+          fi
+          if [ -e "sei/$name.json" ]; then
+            echo "::error::sei '$name' is already registered"
+            exit 1
+          fi
+          UPSTREAM_URL="$url" python3 .github/scripts/sync-upstream.py "$name" --from-registration
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Open the pull request
+        id: pr
+        if: steps.apply.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          NAME: ${{ steps.apply.outputs.name }}
+        run: |
+          set -euo pipefail
+          branch="register/issue-$ISSUE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -B "$branch"
+          git add sei index.json catalog.json
+          git commit -q -m "sei: register $NAME (#$ISSUE)"
+          git push -q --force origin "$branch"
+          number=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$number" ]; then
+            number=$(gh pr create --repo "$REPO" --base main --head "$branch" \
+              --title "sei: register $NAME (#$ISSUE)" \
+              --body "Closes #$ISSUE
+
+          Registers \`$NAME\` with its maintainer-published index. The mirror is validated by the Validate index workflow before merge." \
+              --json number --jq .number)
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Comment
+        if: steps.pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$REPO" --body "Registered as #$PR. It merges when validation passes; this issue closes on merge."
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label "registration-pending" --remove-label "registration-failed" 2>/dev/null || true
+
+      - name: Report rejection
+        if: steps.apply.outcome == 'failure' && steps.gate.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$REPO" --body "The registration could not be applied; see the workflow log. Fix the issue body and reapply the label."
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label "registration-failed" 2>/dev/null || true
+
+env:
+  SK_VERSION: "0.3.0"

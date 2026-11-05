@@ -1,0 +1,124 @@
+name: Refresh from upstream
+
+# Daily pull of every registered maintainer index, plus an on-demand refresh
+# from a labeled issue. Appends new versions and updates project metadata; a
+# rewrite or a removed version fails the run and comments on the issue.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-upstream
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    if: >-
+      github.event_name != 'issues' ||
+      (github.event.label.name == 'refresh' && github.event.issue.state == 'open')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Download sk
+        run: |
+          set -euo pipefail
+          base="https://github.com/Hosihikari/Seiko/releases/download/v${SK_VERSION}"
+          asset="sk-${SK_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$asset" "$base/$asset"
+          curl -fsSL -o "$RUNNER_TEMP/SHA256SUMS" "$base/SHA256SUMS"
+          (cd "$RUNNER_TEMP" && sha256sum -c SHA256SUMS --ignore-missing)
+          mkdir -p "$RUNNER_TEMP/sk"
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/sk"
+          chmod +x "$RUNNER_TEMP/sk/sk"
+          echo "SK_BIN=$RUNNER_TEMP/sk/sk" >> "$GITHUB_ENV"
+
+      - name: Check authorization
+        id: gate
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          body=$(gh issue view "$ISSUE" --repo "$REPO" --json body --jq .body)
+          name=$(printf '%s\n' "$body" | awk '/^### Sei name$/{getline; print; exit}' | tr -d '[:space:]')
+          author="${{ github.event.issue.user.login }}"
+          if [ -z "$name" ]; then
+            echo "::error::the issue has no sei name"
+            exit 1
+          fi
+          if [ ! -f "sei/$name.json" ]; then
+            echo "::error::sei '$name' is not registered; use the registration form"
+            exit 1
+          fi
+          python3 .github/scripts/require-maintainer.py "$name" "$author"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Apply the refresh
+        id: apply
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            python3 .github/scripts/sync-upstream.py "${{ steps.gate.outputs.name }}"
+          else
+            python3 .github/scripts/sync-upstream.py --all
+          fi
+
+      - name: Open the pull request
+        id: pr
+        if: steps.apply.outputs.result == 'updated'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          suffix="${{ github.run_id }}"
+          branch="refresh/$suffix"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -B "$branch"
+          git add sei index.json catalog.json
+          git commit -q -m "sei: refresh from upstream"
+          git push -q --force origin "$branch"
+          number=$(gh pr create --repo "${{ github.repository }}" --base main --head "$branch" \
+            --title "sei: refresh from upstream" \
+            --body "Mirrored refresh from the registered maintainer indexes. New versions and project changes only; rewrites fail instead of applying." \
+            --json number --jq .number)
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on success
+        if: github.event_name == 'issues' && steps.apply.outputs.result == 'updated'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "Refreshed in #$PR; it merges when validation passes."
+
+      - name: Comment on failure
+        if: github.event_name == 'issues' && failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "The refresh failed; see the workflow log. Append-only violations must ship as a new version."
+
+env:
+  SK_VERSION: "0.3.0"
