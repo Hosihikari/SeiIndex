@@ -1,6 +1,20 @@
 {
   "schemaVersion": 2,
   "name": "hosihikari-hosting-endstone",
+  "project": {
+    "description": "Endstone hosting implementation for the Hosihikari framework.",
+    "authors": [
+      "Hosihikari"
+    ],
+    "license": "GPL-3.0-only",
+    "tags": [
+      "framework",
+      "hosting",
+      "endstone"
+    ],
+    "repositoryUrl": "https://github.com/HosihikariFramework/HostingShim",
+    "repositoryType": "git"
+  },
   "versions": [
     {
       "version": "1.0.0",

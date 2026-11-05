@@ -1,6 +1,20 @@
 {
   "schemaVersion": 2,
   "name": "hosihikari-csharp",
+  "project": {
+    "description": "C# plugin loader for the Hosihikari framework; compiles .cs sources at load time.",
+    "authors": [
+      "Hosihikari"
+    ],
+    "license": "GPL-3.0-only",
+    "tags": [
+      "framework",
+      "loader",
+      "csharp"
+    ],
+    "repositoryUrl": "https://github.com/HosihikariFramework/CSharpLoader",
+    "repositoryType": "git"
+  },
   "versions": [
     {
       "version": "1.1.0",

@@ -1,6 +1,20 @@
 {
   "schemaVersion": 2,
   "name": "hosihikari",
+  "project": {
+    "description": "Core of the Hosihikari framework: discovers plugin packages, loads them in dependency order and drives their lifecycle.",
+    "authors": [
+      "Hosihikari"
+    ],
+    "license": "GPL-3.0-only",
+    "tags": [
+      "framework",
+      "core",
+      "plugin-manager"
+    ],
+    "repositoryUrl": "https://github.com/HosihikariFramework/PluginManager",
+    "repositoryType": "git"
+  },
   "versions": [
     {
       "version": "1.2.0",
