@@ -274,8 +274,17 @@ def main() -> int:
     registration = "--from-registration" in sys.argv
     try:
         if "--all" in sys.argv:
+            skipped = 0
             for path in sorted(SEI_DIR.glob("*.json")):
-                sync_one(path.stem, current_url(load(path)), registration=False)
+                entry = load(path)
+                # Entries registered before the model carry an empty
+                # placeholder until their maintainers register a URL.
+                if not current_url(entry):
+                    skipped += 1
+                    continue
+                sync_one(path.stem, None, registration=False)
+            if skipped:
+                print(f"{skipped} entr(ies) without an upstream URL were skipped")
         else:
             if len(args) != 1:
                 print("usage: sync-upstream.py <name> [--from-registration] | --all", file=sys.stderr)
