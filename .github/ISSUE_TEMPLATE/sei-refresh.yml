@@ -1,5 +1,6 @@
 name: Refresh a registered sei
 description: Ask the bot to re-read your sei-index.json now.
+labels: ["refresh"]
 title: "[refresh] "
 body:
   - type: input

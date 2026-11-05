@@ -186,6 +186,8 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 - **镜像是严格追加**：只追加新版本，`project` 与退役文案可改；改写或删除版本会让刷新失败，必须发新版本。
 - **源侧覆盖属于索引侧**：`sourceYanked`、`sourceAdvisories`、`sourceUnlisted`、`sourceDeprecated` 存在镜像里，并在每次刷新后保留。
 - **`upstream` 与 `maintainers` 也属于索引侧**；维护者文件不得声明它们。
+- **维护者变更**走 *Change maintainers* 表单，必须由现任维护者发起；移除最后一人需要索引维护者打 `maintainers-approved`。
+
 
 维护者文件使用同一套 `SeiIndex` schema 加 `project`，不含任何索引侧字段。推送前用 `sk index verify ./sei-index.json` 本地校验。
 

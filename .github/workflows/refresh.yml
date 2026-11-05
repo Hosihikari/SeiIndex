@@ -8,7 +8,7 @@ on:
   schedule:
     - cron: "17 */6 * * *"
   issues:
-    types: [labeled]
+    types: [opened, labeled, edited, reopened]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 30
     if: >-
       github.event_name != 'issues' ||
-      (github.event.label.name == 'refresh' && github.event.issue.state == 'open')
+      (contains(github.event.issue.labels.*.name, 'refresh') && github.event.issue.state == 'open')
     steps:
       - uses: actions/checkout@v7
         with:
