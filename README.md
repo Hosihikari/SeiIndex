@@ -195,6 +195,20 @@ A registered package is mirrored from a `sei-index.json` the maintainers publish
 
 A maintainer file uses the same `SeiIndex` schema plus `project`, and nothing else index-side. Validate it locally with `sk index verify ./sei-index.json` before pushing.
 
+## Release automation
+
+`.github/actions/sei-release` is a composite action that writes `sei-index.json` from already-uploaded release artifacts: it reads each artifact's root `sei.json`, records URL, digest and size, reuses the version entry when the artifact is unchanged, and refuses to rewrite a published version. `.github/templates/release-sei.yml` is a starting workflow.
+
+```yaml
+- uses: Hosihikari/SeiIndex/.github/actions/sei-release@main
+  with:
+    index-path: sei-index.json
+    artifacts: |
+      [{ "rid": "win-x64", "path": "dist/hello.zip", "url": "https://github.com/you/repo/releases/download/v1.0.0/hello.zip" }]
+```
+
+The action runs with your repository's permissions and never touches this index; the refresh picks the file up afterwards.
+
 ## Verify locally
 
 ```bash

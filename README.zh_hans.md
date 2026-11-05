@@ -189,6 +189,20 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 维护者文件使用同一套 `SeiIndex` schema 加 `project`，不含任何索引侧字段。推送前用 `sk index verify ./sei-index.json` 本地校验。
 
+## 发布自动化
+
+`.github/actions/sei-release` 是一个复合 action：从已经上传好的发布附件写出 `sei-index.json`——读每个附件根部的 `sei.json`，记录 URL、摘要与大小，构件不变时复用版本条目，已发布版本被改写则失败。`.github/templates/release-sei.yml` 是可复制的工作流起点。
+
+```yaml
+- uses: Hosihikari/SeiIndex/.github/actions/sei-release@main
+  with:
+    index-path: sei-index.json
+    artifacts: |
+      [{ "rid": "win-x64", "path": "dist/hello.zip", "url": "https://github.com/you/repo/releases/download/v1.0.0/hello.zip" }]
+```
+
+action 用你自己仓库的权限运行，从不接触本索引；随后由刷新流程取用。
+
 ## 本地校验
 
 ```bash
