@@ -39,9 +39,9 @@
           "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/HosihikariFramework/RpcLoader/releases/download/v1.1.0/hosihikari-rpc-1.1.0.zip",
-            "sha256": "c8354a643d20dfecfaf363241feb0c505595dee77769629b1d0b9b02765ad448",
-            "size": 53552
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/sei-migration-v1/hosihikariframework-hosihikari-rpc-1.1.0.zip",
+            "sha256": "64cfaa4d3118f8e47492a48b095b24037384b2ef21809067ac14052737f301e3",
+            "size": 53623
           }
         }
       ],

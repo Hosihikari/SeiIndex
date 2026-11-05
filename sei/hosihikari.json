@@ -34,9 +34,9 @@
           "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/HosihikariFramework/PluginManager/releases/download/v1.2.0/hosihikari-core-1.2.0.zip",
-            "sha256": "a65309e97137560672f74998c4895877b85a4a76cb618d173049b75ea5f51afc",
-            "size": 585086
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/sei-migration-v1/hosihikariframework-hosihikari-core-1.2.0.zip",
+            "sha256": "b7257cd6ade19574ea4777c0242a3e58a551c74fe5cf51a40c060e621f1ef92d",
+            "size": 593217
           }
         }
       ],

@@ -39,9 +39,9 @@
           "conflicts": [],
           "layout": "root",
           "source": {
-            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/sei-bundles-v1.0.0/hosihikari-hosting-levilamina-1.0.0.zip",
-            "sha256": "6f77cfc4d537cf17f093527ea70d14d94a91aca01ac904fcf85063004c4e32e6",
-            "size": 303
+            "url": "https://github.com/Hosihikari/SeiIndex/releases/download/sei-migration-v1/hosihikariframework-hosihikari-hosting-levilamina-1.0.0.zip",
+            "sha256": "469345e55b83a0aced3ffc3737d6998aae646a7f7833198c1331ef01f8526e80",
+            "size": 315
           }
         }
       ],
