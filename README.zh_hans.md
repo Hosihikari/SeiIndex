@@ -41,6 +41,35 @@ pull request 不是提交渠道。组织外作者提交的、只改动索引数�
 
 sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、`"`、`<`、`>`、`|`，不能含控制字符，不能以空格或点开头或结尾。文件名、`name` 字段与 `index.json` 中的条目必须一致。
 
+## 项目元数据
+
+每个 `sei/<name>.json` 都带一个 `project` 对象，客户端在 `sk search` 与 `sk info` 中展示：
+
+| 字段 | 说明 |
+| --- | --- |
+| `description` | 必填。单行简介，显示在搜索结果里。 |
+| `authors` | 必填。展示名，不是账号。 |
+| `license` | 必填。SPDX 表达式，如 `MIT` 或 `GPL-3.0-only`。 |
+| `tags` | 可选标签，供 `sk search --tag` 使用。 |
+| `projectUrl` | 可选的项目主页（HTTPS）。 |
+| `repositoryUrl`、`repositoryType` | 可选的源码位置；给了 URL 就必须给 `repositoryType`。 |
+
+已存在的条目只能改 `project`、`unlisted` 与 `deprecated` 这三个包级字段。
+
+维护者文件（`sei-index.json`）形状相同，但不含 `upstream`、`maintainers` 与 `source*`；那些属于索引侧。
+
+### 源侧覆盖
+
+索引维护者可以在不动维护者数据的前提下退役某个版本或追加安全信息：
+
+- `sourceYanked: true` 退役版本；`sourceAdvisories` 追加 advisory。
+- `sourceUnlisted` 与 `sourceDeprecated` 在包级做同样的事。
+- 客户端把覆盖合并进标准字段，旧客户端同样生效。
+
+## catalog.json
+
+`catalog.json` 由镜像生成，支撑一次请求的搜索与 `--tag`/`--license` 过滤。任何改动后用 `sk index catalog .` 重新生成；过期时 CI 失败。
+
 ## 规则
 
 - **版本不可变。** 只能追加新版本；不得修改已有版本条目或删除版本。
@@ -69,6 +98,14 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 {
   "schemaVersion": 2,
   "name": "hello-seiko",
+  "project": {
+    "description": "本 README 中使用的示例 sei。",
+    "authors": ["example"],
+    "license": "MIT",
+    "tags": ["example"],
+    "repositoryUrl": "https://github.com/example/hello-seiko",
+    "repositoryType": "git"
+  },
   "versions": [
     {
       "version": "1.0.0",
@@ -144,6 +181,9 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 ```bash
 sk index verify . --check-artifacts --strict
+sk index catalog . --check
 ```
+
+提交 CI 还会对单个 `sei-index.json` 运行 `sk index verify`；文件模式检查同一套规则，不需要周边索引。
 
 命令会打印发现的问题，出错时以非零退出（`--strict` 时警告也算失败）。`--json` 输出 Seiko 常用的信封。CI 使用固定版本的 `sk` 运行同一命令，并用 `git diff` 检查追加规则。0.3 的 schema 迁移是规则的一次性例外；迁移完成后版本重新只追加。

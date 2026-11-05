@@ -41,10 +41,39 @@ Pull requests that touch anything else, including `.github/` and this README, ar
 
 A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no control characters, and no leading or trailing space or dot. The file name, the `name` field, and the entry in `index.json` must all match.
 
+## Project metadata
+
+Each `sei/<name>.json` carries a `project` object that the client shows in `sk search` and `sk info`:
+
+| Field | Meaning |
+| --- | --- |
+| `description` | Required. One line, shown in search results. |
+| `authors` | Required. Display names, not accounts. |
+| `license` | Required. An SPDX expression such as `MIT` or `GPL-3.0-only`. |
+| `tags` | Optional labels for `sk search --tag`. |
+| `projectUrl` | Optional HTTPS project page. |
+| `repositoryUrl`, `repositoryType` | Optional source location; `repositoryType` is required when a URL is given. |
+
+`project`, `unlisted` and `deprecated` are the only package-level fields an existing entry may change.
+
+A maintainer file (`sei-index.json`) has the same shape but no `upstream`, `maintainers`, or `source*` fields; those belong to the index side.
+
+### Source overlay
+
+Index maintainers can retire a version or add a finding without touching the maintainer's data:
+
+- `sourceYanked: true` yanks a version; `sourceAdvisories` adds findings.
+- `sourceUnlisted` and `sourceDeprecated` do the same at package level.
+- The client merges the overlay into the standard fields, so an older client still honours it.
+
+## catalog.json
+
+`catalog.json` is generated from the mirrors and powers one-request search plus `--tag` and `--license`. Regenerate it with `sk index catalog .` after any change; CI fails when it is stale.
+
 ## Rules
 
 - **Versions are immutable.** Append new versions; never edit an existing version entry or remove one.
-- **Only `yanked`, `deprecated`, and `advisory` may change in an existing version.** Package-level `unlisted` and `deprecated` may also change. `yanked: true` hides a version from new resolutions but keeps it available for lock replay; `deprecated` is a human-readable migration message; `advisory.severity: "critical"` blocks new resolutions unless the user passes `--allow-critical`.
+- **Only `yanked`, `deprecated`, `advisory`, and the source overlay may change in an existing version.** Package-level `unlisted`, `deprecated`, and `project` may also change. `yanked: true` hides a version from new resolutions but keeps it available for lock replay; `deprecated` is a human-readable migration message; `advisory.severity: "critical"` blocks new resolutions unless the user passes `--allow-critical`.
 - **Never delete a sei or a version.** Yanking, deprecating, or unlisting is the retirement path.
 - **The `sei` list in `index.json` may only grow.** Removing a name breaks search and is rejected.
 - **Artifacts must be zip archives** with exactly one root `sei.json` (the current store extracts zip only).
@@ -69,6 +98,14 @@ A sei name must be path-safe: no `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|`, no
 {
   "schemaVersion": 2,
   "name": "hello-seiko",
+  "project": {
+    "description": "Example sei used in this README.",
+    "authors": ["example"],
+    "license": "MIT",
+    "tags": ["example"],
+    "repositoryUrl": "https://github.com/example/hello-seiko",
+    "repositoryType": "git"
+  },
   "unlisted": false,
   "deprecated": null,
   "versions": [
@@ -150,6 +187,9 @@ Every version needs at least one artifact, and two artifacts in one version cann
 
 ```bash
 sk index verify . --check-artifacts --strict
+sk index catalog . --check
 ```
+
+The submission CI also runs `sk index verify` against a single `sei-index.json`; the file mode checks the same rules without needing the surrounding index.
 
 The command prints findings and exits non-zero on errors (or on warnings with `--strict`). `--json` emits the usual Seiko envelope. CI runs the same command with a pinned `sk` version, plus `git diff` checks for the append-only rules. The 0.3 schema migration is a one-time exception to those rules; after it, versions are append-only again.
