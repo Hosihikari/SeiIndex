@@ -1,0 +1,34 @@
+name: Register a sei
+description: Register a package whose sei-index.json you maintain.
+title: "[register] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One package per issue. Publish a `sei-index.json` in your own repository or site
+        (fixed file name, HTTPS, public) and register its URL here. See the README for the format.
+
+        A maintainer approves by adding the `register-approved` label; the bot then fetches,
+        validates and mirrors your file.
+  - type: input
+    id: name
+    attributes:
+      label: Sei name
+      description: Must match `name` inside your sei-index.json. Path-safe, no spaces.
+      placeholder: hello-seiko
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: sei-index.json URL
+      description: Public HTTPS URL whose last segment is `sei-index.json`.
+      placeholder: https://github.com/you/your-repo/raw/main/sei-index.json
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Project repository
+      description: Optional. Where the package source lives.
+      placeholder: https://github.com/you/your-repo

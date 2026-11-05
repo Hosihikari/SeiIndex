@@ -1,0 +1,12 @@
+name: Refresh a registered sei
+description: Ask the bot to re-read your sei-index.json now.
+title: "[refresh] "
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Sei name
+      description: Must match a registered name; the issue author must be listed in its maintainers.
+      placeholder: hello-seiko
+    validations:
+      required: true

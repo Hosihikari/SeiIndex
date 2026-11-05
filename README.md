@@ -183,6 +183,18 @@ Fields:
 
 Every version needs at least one artifact, and two artifacts in one version cannot have identical `rid` and `prerequisites`.
 
+## Maintainer-published indexes
+
+A registered package is mirrored from a `sei-index.json` the maintainers publish in their own repository or site; the README rules above still apply, now to that file.
+
+- **Register** with the *Register a sei* form (name + URL). A maintainer adds `register-approved`; the bot fetches, validates and opens the pull request.
+- **Refresh** happens every six hours, or right away with the *Refresh a registered sei* form. Only the issue author's login must be in the package's `maintainers` list.
+- **The mirror is append-only**: new versions are appended, `project` and retirement text may change, a rewritten or removed version fails the refresh and must ship as a new version.
+- **Source overlay** is index-side: `sourceYanked`, `sourceAdvisories`, `sourceUnlisted`, `sourceDeprecated` live in the mirror and survive every refresh.
+- **`upstream` and `maintainers` are index-side too**; a maintainer file must not declare them.
+
+A maintainer file uses the same `SeiIndex` schema plus `project`, and nothing else index-side. Validate it locally with `sk index verify ./sei-index.json` before pushing.
+
 ## Verify locally
 
 ```bash

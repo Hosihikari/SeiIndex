@@ -177,6 +177,18 @@ sei 名称必须可安全用作路径：不能含 `/`、`\`、`:`、`*`、`?`、
 
 每个版本至少需要一个构件；同一版本中的两个构件不能有相同的 `rid` 与 `prerequisites`。
 
+## 维护者发布的索引
+
+已登记的包由维护者在自己仓库或站点发布的 `sei-index.json` 镜像而来；上面的规则不变，只是作用在那个文件上。
+
+- **登记**用 *Register a sei* 表单（名字 + URL）。维护者打上 `register-approved` 后，机器人拉取、校验并开 PR。
+- **刷新**每六小时一次，也可用 *Refresh a registered sei* 表单立即触发。触发者的登录名必须在包的 `maintainers` 里。
+- **镜像是严格追加**：只追加新版本，`project` 与退役文案可改；改写或删除版本会让刷新失败，必须发新版本。
+- **源侧覆盖属于索引侧**：`sourceYanked`、`sourceAdvisories`、`sourceUnlisted`、`sourceDeprecated` 存在镜像里，并在每次刷新后保留。
+- **`upstream` 与 `maintainers` 也属于索引侧**；维护者文件不得声明它们。
+
+维护者文件使用同一套 `SeiIndex` schema 加 `project`，不含任何索引侧字段。推送前用 `sk index verify ./sei-index.json` 本地校验。
+
 ## 本地校验
 
 ```bash
