@@ -153,4 +153,4 @@ jobs:
           gh issue edit "$ISSUE" --repo "$REPO" --add-label "registration-failed" 2>/dev/null || true
 
 env:
-  SK_VERSION: "0.3.0"
+  SK_VERSION: "0.4.0"

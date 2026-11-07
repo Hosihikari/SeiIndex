@@ -121,4 +121,4 @@ jobs:
         run: gh issue comment "$ISSUE" --repo "${{ github.repository }}" --body "The refresh failed; see the workflow log. Append-only violations must ship as a new version."
 
 env:
-  SK_VERSION: "0.3.0"
+  SK_VERSION: "0.4.0"
