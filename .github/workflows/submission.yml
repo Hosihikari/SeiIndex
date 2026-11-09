@@ -77,6 +77,20 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Download sk
+        if: steps.gate.outputs.allowed == 'true' && steps.state.outputs.open == 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/Hosihikari/Seiko/releases/download/v${SK_VERSION}"
+          asset="sk-${SK_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$asset" "$base/$asset"
+          curl -fsSL -o "$RUNNER_TEMP/SHA256SUMS" "$base/SHA256SUMS"
+          (cd "$RUNNER_TEMP" && sha256sum -c SHA256SUMS --ignore-missing)
+          mkdir -p "$RUNNER_TEMP/sk"
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP/sk"
+          chmod +x "$RUNNER_TEMP/sk/sk"
+          echo "SK_BIN=$RUNNER_TEMP/sk/sk" >> "$GITHUB_ENV"
+
       - name: Acquire submission lock
         id: lock
         if: steps.gate.outputs.allowed == 'true' && steps.state.outputs.open == 'true'
@@ -173,7 +187,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add -A -- index.json sei
+          # The catalog is derived from sei/*.json, so it has to move with the
+          # entry; otherwise the PR's own Validate run fails on a stale one.
+          "$SK_BIN" index catalog .
+          git add -A -- index.json catalog.json sei
           git commit -m "sei: add $NAME $VERSION (#$ISSUE)"
           git push --force origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
@@ -343,3 +360,6 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh api --method DELETE "repos/$REPO/git/refs/heads/internal/submission-lock" >/dev/null 2>&1 || true
+
+env:
+  SK_VERSION: "0.4.0"

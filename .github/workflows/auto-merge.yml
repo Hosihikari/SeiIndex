@@ -42,6 +42,7 @@ jobs:
             [ -z "$path" ] && continue
             case "$path" in
               index.json) ;;
+              catalog.json) ;;
               sei/*.json)
                 if ! printf '%s' "$path" | grep -Eq '^sei/[^/]+\.json$'; then
                   allowed=false
