@@ -207,6 +207,9 @@
           "optionalPeers": [],
           "conflicts": [],
           "layout": "root",
+          "modes": {
+            "hosihikari-server": "0755"
+          },
           "source": {
             "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v1.2.2/hosihikari-selfhosted-linux-x64.zip",
             "sha256": "b9a9fdf9672d823f7b1076248216d52c403f12b8b3e2b5e57da04b55809ebe92",
