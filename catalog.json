@@ -86,7 +86,7 @@
     },
     {
       "name": "hosihikari-rpc",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Out-of-process RPC loader for the Hosihikari framework, for plugins that cannot be compiled to IL.",
       "tags": [
         "framework",
