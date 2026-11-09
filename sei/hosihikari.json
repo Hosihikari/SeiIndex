@@ -43,6 +43,27 @@
       "prerequisites": [],
       "optionalPeers": [],
       "conflicts": []
+    },
+    {
+      "version": "1.3.0",
+      "dependencies": [],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/PluginManager/releases/download/v1.3.0/hosihikari-core-1.3.0.zip",
+            "sha256": "2e64917bf2c45029154a4601b4c1a8a170789f485f3c5ffb3adf82d4fcfd0f99",
+            "size": 645060
+          }
+        }
+      ]
     }
   ]
 }
