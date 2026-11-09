@@ -27,7 +27,7 @@
     },
     {
       "name": "hosihikari-fsharp",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "F# plugin loader for the Hosihikari framework; compiles .fsx sources at load time.",
       "tags": [
         "framework",
