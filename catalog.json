@@ -39,7 +39,7 @@
     },
     {
       "name": "hosihikari-hosting",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "description": "Hosting contract of the Hosihikari framework: the hosting surfaces a server implementation must provide.",
       "tags": [
         "framework",
