@@ -342,6 +342,113 @@
           }
         }
       ]
+    },
+    {
+      "version": "2.0.0",
+      "dependencies": [
+        {
+          "name": "hosihikari",
+          "version": "[2.0.0,3.0.0)"
+        }
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "rid": "win-x64",
+          "dependencies": [],
+          "prerequisites": [
+            {
+              "name": "hosihikari-hosting-levilamina",
+              "version": "*"
+            }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v2.0.0/hosihikari-levilamina-windows-x64.zip",
+            "sha256": "8dce19b1c99c1f4304d628011b92f04000dc7995c2804afe6aa70d6fee2b854a",
+            "size": 147113
+          }
+        },
+        {
+          "rid": "win-x64",
+          "dependencies": [],
+          "prerequisites": [
+            {
+              "name": "hosihikari-hosting-endstone",
+              "version": "*"
+            }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v2.0.0/hosihikari-endstone-windows-x64.zip",
+            "sha256": "22ad471739fbfab0d897054715fb71aa0b8524b7d0b82ed45425247138245535",
+            "size": 902727
+          }
+        },
+        {
+          "rid": "linux-x64",
+          "dependencies": [],
+          "prerequisites": [
+            {
+              "name": "hosihikari-hosting-endstone",
+              "version": "*"
+            }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v2.0.0/hosihikari-endstone-linux-x64.zip",
+            "sha256": "57fa9f522f18f611690e5d7bcbacefbb9a3fcd5d7b800e3f5a75264d08fd2fa1",
+            "size": 624946
+          }
+        },
+        {
+          "rid": "linux-x64",
+          "dependencies": [],
+          "prerequisites": [
+            {
+              "name": "hosihikari-hosting-selfhosted",
+              "version": "*"
+            }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v2.0.0/hosihikari-selfhosted-linux-x64.zip",
+            "sha256": "6e31829445226cc2ae76224f3d2b04477da2b59e5b4d8a07d5bce373224f08df",
+            "size": 40736
+          },
+          "modes": {
+            "hosihikari-server": "0755"
+          }
+        },
+        {
+          "rid": "win-x64",
+          "dependencies": [],
+          "prerequisites": [
+            {
+              "name": "hosihikari-hosting-selfhosted",
+              "version": "*"
+            }
+          ],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/HostingShim/releases/download/v2.0.0/hosihikari-selfhosted-windows-x64.zip",
+            "sha256": "7324d91bdcbbc8c00346fdffea460e01eb7b9aff95116ee411a0a4ea1aea7c49",
+            "size": 1425808
+          }
+        }
+      ]
     }
   ]
 }
