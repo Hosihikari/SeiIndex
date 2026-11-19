@@ -74,6 +74,32 @@
           }
         }
       ]
+    },
+    {
+      "version": "2.0.0",
+      "dependencies": [
+        {
+          "version": "[2.0.0,3.0.0)",
+          "name": "hosihikari"
+        }
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/RpcLoader/releases/download/v2.0.0/hosihikari-rpc-2.0.0.zip",
+            "sha256": "7366185db81d89fe3eb550a7494ac134bceb44ebcbe8757d8a9958d6871da628",
+            "size": 132661
+          }
+        }
+      ]
     }
   ]
 }
