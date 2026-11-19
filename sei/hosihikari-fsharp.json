@@ -100,6 +100,32 @@
           }
         }
       ]
+    },
+    {
+      "version": "2.0.1",
+      "dependencies": [
+        {
+          "version": "[2.0.0,3.0.0)",
+          "name": "hosihikari"
+        }
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/FSharpLoader/releases/download/v2.0.1/hosihikari-fsharp-2.0.1.zip",
+            "sha256": "b0e3c57be180bd9a8c1846715ba2ed6035212a4e5db271e99b278019f578884b",
+            "size": 11251118
+          }
+        }
+      ]
     }
   ]
 }
