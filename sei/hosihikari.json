@@ -64,6 +64,27 @@
           }
         }
       ]
+    },
+    {
+      "version": "2.0.0",
+      "dependencies": [],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/PluginManager/releases/download/v2.0.0/hosihikari-core-2.0.0.zip",
+            "sha256": "d4681706518892afb3822b0eaa671ddc5a78ccd16598d760280c8d568b3077e8",
+            "size": 677331
+          }
+        }
+      ]
     }
   ]
 }
