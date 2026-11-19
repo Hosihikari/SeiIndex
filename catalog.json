@@ -15,7 +15,7 @@
     },
     {
       "name": "hosihikari-csharp",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "C# plugin loader for the Hosihikari framework; compiles .cs sources at load time.",
       "tags": [
         "csharp",
