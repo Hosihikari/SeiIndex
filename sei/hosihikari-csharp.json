@@ -74,6 +74,32 @@
           }
         }
       ]
+    },
+    {
+      "version": "2.0.0",
+      "dependencies": [
+        {
+          "name": "hosihikari",
+          "version": "[2.0.0,3.0.0)"
+        }
+      ],
+      "prerequisites": [],
+      "optionalPeers": [],
+      "conflicts": [],
+      "artifacts": [
+        {
+          "dependencies": [],
+          "prerequisites": [],
+          "optionalPeers": [],
+          "conflicts": [],
+          "layout": "root",
+          "source": {
+            "url": "https://github.com/HosihikariFramework/CSharpLoader/releases/download/v2.0.0/hosihikari-csharp-2.0.0.zip",
+            "sha256": "dad83d17e11c0d77984acfc9d65367a681adcf94e73ab2e848192e9bda741eda",
+            "size": 5700196
+          }
+        }
+      ]
     }
   ]
 }
